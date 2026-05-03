@@ -551,7 +551,7 @@ else
 fi
 
 # ── tmux terminal-features override present ──────────────────────────────────
-if grep -q 'terminal-features' "$HOME/.tmux.conf" 2>/dev/null; then
+if grep -qE '^[[:space:]]*set[[:space:]].*terminal-features' "$HOME/.tmux.conf" 2>/dev/null; then
   pass "tmux terminal-features override present"
 else
   fail "tmux terminal-features override present"
@@ -565,7 +565,7 @@ else
 fi
 
 # ── yazi keymap has C-f binding ───────────────────────────────────────────────
-if grep -q 'C-f' "$HOME/.config/yazi/keymap.toml" 2>/dev/null; then
+if grep -q 'on = "<C-f>"' "$HOME/.config/yazi/keymap.toml" 2>/dev/null; then
   pass "yazi keymap.toml has C-f binding"
 else
   fail "yazi keymap.toml has C-f binding"
