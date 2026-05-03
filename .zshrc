@@ -19,13 +19,14 @@ alias terminal-font-size="$HOME/terminal-font-size.sh"
 alias debug='source ~/.terminal-env && echo "🔍 Debug mode: ON"'
 
 # Green PS1 prompt inside AI workspace tmux session
+# NOTE: This must remain AFTER any prompt framework (starship, oh-my-zsh, etc.)
 if [[ -n "$TMUX" ]]; then
   _ws=$(tmux display-message -p '#S' 2>/dev/null)
-  if [[ "$_ws" == "workspace" ]] || [[ "$_ws" == "AI-Workspace" ]]; then
-    autoload -U colors && colors
+  if [[ "$_ws" == (workspace|AI-Workspace) ]]; then
     PROMPT='%F{green}[%m]%f %F{green}%~%f %F{green}❯%f '
     RPROMPT=''
   fi
+  unset _ws
 fi
 
 # ── AI WORKSPACE AUTO-LAUNCH ──────────────────────────────────────────────────
