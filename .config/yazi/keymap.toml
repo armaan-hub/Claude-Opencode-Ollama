@@ -1,0 +1,8 @@
+# ~/.config/yazi/keymap.toml
+# Extends yazi defaults — adds Ctrl+F for fzf deep search
+
+[manager]
+
+prepend_keymap = [
+  { on = "<C-f>", run = "shell 'fd --type f --hidden --follow --exclude .git . | fzf --height 50% --reverse --preview \"bat --color=always {} 2>/dev/null || cat {}\" | xargs -r -I{} yazi \"{}\"' --block", desc = "fzf: deep recursive file search" },
+]
