@@ -11,6 +11,7 @@
 
   "logo": {
     "type": "builtin",
+    "source": "Apple_small",
     "color": {
       "1": "green",
       "2": "bright_green"

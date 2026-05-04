@@ -1,0 +1,64 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# GHOSTTY TERMINAL CONFIGURATION
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ── FONT SETTINGS ──────────────────────────────────────────────────────────
+# Font: Use a monospace nerd font with ligature support
+font-family = "JetBrainsMono NFM"
+# Default font size: 13 (14 for better readability, 20 for presentations)
+# Use keyboard shortcuts to change: Cmd++ (enlarge), Cmd+- (shrink), Cmd+0 (reset)
+font-size = 14
+
+# Font rendering: use anti-aliasing for crisp text
+font-feature = ss01
+font-feature = ss02
+
+# ── THEME & COLORS ────────────────────────────────────────────────────────
+# Dark theme with better contrast for terminal UI
+theme = "Catppuccin Mocha"
+# Pure black background (overrides theme background)
+background = 000000
+
+# ── WINDOW SETTINGS ────────────────────────────────────────────────────────
+# Window is maximized by default in Ghostty
+
+# ── CURSOR SETTINGS ────────────────────────────────────────────────────────
+# Cursor style: bar (thin line), block (filled box), or underline
+cursor-style = bar
+
+# ── SHELL INTEGRATION ──────────────────────────────────────────────────────
+# Enable shell integration for zsh (auto-launched from ~/.zshrc)
+shell-integration = zsh
+
+# ── CLIPBOARD & PERMISSIONS ───────────────────────────────────────────────
+# Clipboard write permissions: allow (allow all), deny (deny all), ask (prompt each time)
+clipboard-write = allow
+
+# ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────────
+# Cmd++ = Enlarge font (built-in macOS behavior)
+# Cmd+- = Shrink font (built-in macOS behavior)
+# Cmd+0 = Reset font to default (built-in macOS behavior)
+# Cmd+T = New tab
+# Cmd+N = New window
+# Cmd+W = Close tab
+# Cmd+Q = Quit
+
+# ── MOUSE SETTINGS ─────────────────────────────────────────────────────────
+# Disable mouse reporting (let tmux handle it)
+# mouse-reporting = false
+
+# ── PERFORMANCE ───────────────────────────────────────────────────────────
+# (scrollback handled automatically by Ghostty)
+
+# ── ENVIRONMENT VARIABLES ──────────────────────────────────────────────────
+# Ensure terminal capabilities are properly set
+env = TERM=xterm-256color
+env = COLORTERM=truecolor
+
+# ── TMUX INTEGRATION ───────────────────────────────────────────────────────
+# Enable true color support for tmux
+# (Important for btop and other terminal UIs)
+
+# ── DEBUG MODE ─────────────────────────────────────────────────────────────
+# Uncomment to enable debug mode (shows more verbose logging)
+# debug = true
