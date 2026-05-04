@@ -36,6 +36,12 @@ if [[ "$TERM_PROGRAM" == "ghostty" ]] && [[ -z "$TMUX" ]] && [[ $- == *i* ]]; th
 fi
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ── FASTFETCH: auto-run in any other interactive terminal (not Ghostty, not tmux) ──
+if [[ "$TERM_PROGRAM" != "ghostty" ]] && [[ -z "$TMUX" ]] && [[ $- == *i* ]]; then
+  fastfetch --config "$HOME/.config/fastfetch/config.jsonc"
+fi
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ═══════════════════════════════════════════════════════════════════════════
 # CLI DIRECTORY CONTEXT AWARENESS
 # Automatically detects project context and passes CWD to CLI tools

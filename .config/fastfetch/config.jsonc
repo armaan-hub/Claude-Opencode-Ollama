@@ -11,10 +11,14 @@
 
   "logo": {
     "type": "builtin",
-    "source": "Apple_small",
+    "source": "Apple",
     "color": {
-      "1": "green",
-      "2": "bright_green"
+      "1": "#50fa7b",
+      "2": "#f1fa8c",
+      "3": "#ffb86c",
+      "4": "#ff5555",
+      "5": "#bd93f9",
+      "6": "#8be9fd"
     }
   },
 
@@ -27,6 +31,7 @@
     "os",
     "host",
     "kernel",
+    "uptime",
     "packages",
     "shell",
     { "type": "terminal",     "key": "Terminal" },
@@ -35,6 +40,8 @@
     "gpu",
     "memory",
     "disk",
+    "battery",
+    { "type": "localip",      "key": "Local IP",   "showIpv4": true, "showIpv6": false },
     "separator",
     "colors"
   ]
