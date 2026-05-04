@@ -399,12 +399,12 @@ else
 fi
 
 # ── Ghostty uses Nerd Font ────────────────────────────────────────────────────
-if grep -q 'Nerd Font\|NerdFont\|nerd-font' "$GHOSTTY_CONFIG" 2>/dev/null; then
+if grep -q 'Nerd Font\|NerdFont\|nerd-font\| NFM\| NF \| NF$' "$GHOSTTY_CONFIG" 2>/dev/null; then
   FONT=$(grep 'font-family' "$GHOSTTY_CONFIG" 2>/dev/null | grep -v '^\s*#' | head -1 | xargs)
   pass "ghostty uses a Nerd Font ($FONT)"
 else
   fail "ghostty uses a Nerd Font" \
-    "set font-family = \"JetBrainsMono Nerd Font Mono\" in $GHOSTTY_CONFIG for icon rendering"
+    "set font-family = \"JetBrainsMono NFM\" in $GHOSTTY_CONFIG for icon rendering"
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
