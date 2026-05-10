@@ -14,7 +14,8 @@ def compute_llm_params(query: str, mode: str, model: str) -> dict:
     """Returns dict with mode, max_tokens, temperature, top_p, retrieval_steps."""
     config = LLMParamsRegistry.load().get_mode(mode)
     estimated_query_tokens = _estimate_tokens(query)
-    estimated_context_tokens = min(config.max_tokens, estimated_query_tokens * max(1, config.retrieval_steps))
+    # Context estimate = query tokens + retrieved doc chunks (~500 tokens each).
+    estimated_context_tokens = estimated_query_tokens + (config.retrieval_steps * 500)
 
     return {
         "mode": config.name,

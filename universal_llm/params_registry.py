@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import Dict
 
@@ -18,6 +19,7 @@ Registry = Dict[str, ModeConfig]
 
 class LLMParamsRegistry:
     _instance: "LLMParamsRegistry | None" = None
+    _lock = threading.Lock()
 
     def __init__(self, modes: Registry):
         self._modes = modes
@@ -25,31 +27,33 @@ class LLMParamsRegistry:
     @classmethod
     def load(cls) -> "LLMParamsRegistry":
         if cls._instance is None:
-            cls._instance = cls(
-                {
-                    "fast": ModeConfig(
-                        name="fast",
-                        max_tokens=4096,
-                        temperature=0.3,
-                        top_p=0.9,
-                        retrieval_steps=1,
-                    ),
-                    "deep_research": ModeConfig(
-                        name="deep_research",
-                        max_tokens=32768,
-                        temperature=0.7,
-                        top_p=0.95,
-                        retrieval_steps=3,
-                    ),
-                    "analysis": ModeConfig(
-                        name="analysis",
-                        max_tokens=32768,
-                        temperature=0.5,
-                        top_p=0.95,
-                        retrieval_steps=2,
-                    ),
-                }
-            )
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(
+                        {
+                            "fast": ModeConfig(
+                                name="fast",
+                                max_tokens=4096,
+                                temperature=0.3,
+                                top_p=0.9,
+                                retrieval_steps=1,
+                            ),
+                            "deep_research": ModeConfig(
+                                name="deep_research",
+                                max_tokens=32768,
+                                temperature=0.7,
+                                top_p=0.95,
+                                retrieval_steps=3,
+                            ),
+                            "analysis": ModeConfig(
+                                name="analysis",
+                                max_tokens=32768,
+                                temperature=0.5,
+                                top_p=0.95,
+                                retrieval_steps=2,
+                            ),
+                        }
+                    )
         return cls._instance
 
     def get_mode(self, mode_name: str) -> ModeConfig:

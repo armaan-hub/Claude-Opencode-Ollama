@@ -1,3 +1,5 @@
+import pytest
+
 from universal_llm.llm_compute import compute_llm_params
 from universal_llm.params_registry import LLMParamsRegistry
 
@@ -32,3 +34,25 @@ def test_analysis_mode_params():
     assert params["max_tokens"] == 32768
     assert params["temperature"] == 0.5
     assert params["top_p"] == 0.95
+
+
+def test_unknown_mode_raises_error():
+    with pytest.raises(KeyError, match="Unknown mode"):
+        compute_llm_params("test", "invalid_mode", "gpt-4")
+
+
+def test_empty_query_string():
+    params = compute_llm_params("", "fast", "gpt-4")
+    assert params["mode"] == "fast"
+    assert params["max_tokens"] == 4096
+
+
+def test_whitespace_only_query():
+    params = compute_llm_params("   ", "fast", "gpt-4")
+    assert params["mode"] == "fast"
+
+
+def test_case_insensitive_mode_lookup():
+    params1 = compute_llm_params("test", "FAST", "gpt-4")
+    params2 = compute_llm_params("test", "fast", "gpt-4")
+    assert params1["max_tokens"] == params2["max_tokens"]
