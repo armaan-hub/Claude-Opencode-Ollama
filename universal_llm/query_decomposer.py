@@ -116,6 +116,9 @@ def decompose_query(query: str) -> List[str]:
 
     Returns list of sub-query strings.
     """
+    if not query or not isinstance(query, str):
+        return []
+
     text = query.strip()
     if not text:
         return []

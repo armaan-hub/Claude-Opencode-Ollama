@@ -23,6 +23,9 @@ ANALYSIS_KEYWORDS = {
 
 def detect_query_complexity(query: str) -> str:
     """Returns 'fast', 'deep_research', or 'analysis'."""
+    if not query or not isinstance(query, str):
+        return "fast"
+
     normalized = query.lower()
 
     if any(keyword in normalized for keyword in DEEP_RESEARCH_KEYWORDS):
