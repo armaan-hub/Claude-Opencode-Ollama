@@ -11,6 +11,32 @@ from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
+from cryptography.fernet import Fernet
+import base64
+import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _get_encryption_key():
+    """Generate encryption key from fixed secret."""
+    secret = b"jarvis-llm-keys-secret"
+    key = base64.urlsafe_b64encode(hashlib.sha256(secret).digest())
+    return key
+
+
+_cipher = Fernet(_get_encryption_key())
+
+
+def _encrypt_key(key: str) -> str:
+    """Encrypt API key before storage."""
+    return _cipher.encrypt(key.encode()).decode()
+
+
+def _decrypt_key(encrypted_key: str) -> str:
+    """Decrypt API key from storage."""
+    return _cipher.decrypt(encrypted_key.encode()).decode()
 
 # Supported LLM providers
 SUPPORTED_PROVIDERS = {"openai", "anthropic", "cohere", "hugging_face"}
@@ -47,20 +73,34 @@ class ApiKeyUpdateResponse(BaseModel):
 
 
 def _load_keys() -> Dict[str, str]:
-    """Load API keys from storage."""
+    """Load API keys from storage (decrypt if encrypted)."""
     if KEYS_FILE.exists():
         try:
             with open(KEYS_FILE, "r") as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
+                encrypted_data = json.load(f)
+            
+            keys = {}
+            for provider, encrypted_key in encrypted_data.items():
+                try:
+                    keys[provider] = _decrypt_key(encrypted_key)
+                except Exception as e:
+                    logger.error(f"Failed to decrypt key for {provider}: {e}")
+                    keys[provider] = None
+            return keys
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"Failed to load keys from {KEYS_FILE}: {e}")
             return {}
     return {}
 
 
 def _save_keys(keys: Dict[str, str]) -> None:
-    """Save API keys to storage."""
+    """Save API keys to storage (encrypted)."""
+    encrypted_data = {}
+    for provider, key in keys.items():
+        if key is not None:
+            encrypted_data[provider] = _encrypt_key(key)
     with open(KEYS_FILE, "w") as f:
-        json.dump(keys, f)
+        json.dump(encrypted_data, f)
 
 
 def _mask_key(key: str) -> str:
