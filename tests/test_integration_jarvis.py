@@ -1,61 +1,14 @@
+"""Integration tests for Jarvis components (must use real modules)."""
+
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from jarvis.config import Config
-
-try:
-    from jarvis.chat_interface import ChatInterface
-except ImportError:
-    import importlib.util
-    import sys
-    from types import ModuleType
-
-    class ChatInterface:  # pragma: no cover - fallback for missing module
-        def __init__(self, skills_dir: Path):
-            self.skills_dir = Path(skills_dir)
-            self.skills_dir.mkdir(parents=True, exist_ok=True)
-            self.loaded_skills: dict[str, ModuleType] = {}
-            self._load_all()
-
-        def _load_all(self):
-            for path in self.skills_dir.glob("*.py"):
-                name = path.stem
-                spec = importlib.util.spec_from_file_location(f"skill_{name}", path)
-                if spec and spec.loader:
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[f"skill_{name}"] = module
-                    spec.loader.exec_module(module)
-                    self.loaded_skills[name] = module
-
-        def list_skills(self) -> list[str]:
-            return sorted(self.loaded_skills.keys())
-
-try:
-    from jarvis.listener import ListenerService
-except ImportError:
-    class ListenerService:  # pragma: no cover - fallback for missing module
-        def __init__(self, recognizer):
-            self.recognizer = recognizer
-
-        def start(self):
-            self.recognizer.start()
-
-
-try:
-    from jarvis.lmstudio import LMStudioClient
-except ImportError:
-    from urllib.request import urlopen
-
-    class LMStudioClient:  # pragma: no cover - fallback for missing module
-        def __init__(self, base_url: str, opener=urlopen):
-            self.base_url = base_url.rstrip("/")
-            self._opener = opener
-
-        def is_available(self) -> bool:
-            with self._opener(f"{self.base_url}/v1/models", timeout=2) as response:
-                return getattr(response, "status", 500) == 200
+from jarvis.chat_interface import ChatInterface
+from jarvis.listener import ListenerService
+from jarvis.lmstudio import LMStudioClient
 
 
 @pytest.fixture
@@ -73,24 +26,29 @@ def mock_recognizer() -> MagicMock:
 
 
 def test_config_loads(config_file: Path):
+    """Integration: Config loads and stores real data."""
     config = Config(path=config_file)
-    model = getattr(config, "model", None) or config.get("model")
+    model = config.get("model")
     assert config is not None
-    assert model is not None
+    assert model == "gpt-5-mini"
 
 
 def test_listener_startup(mock_recognizer: MagicMock):
+    """Integration: Listener service can be instantiated and started."""
     listener = ListenerService(recognizer=mock_recognizer)
-
     listener.start()
-
     mock_recognizer.start.assert_called_once()
 
 
 def test_skill_loading_integration(tmp_path: Path):
+    """Integration: ChatInterface loads real Python skill files."""
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir(parents=True)
-    (skills_dir / "alpha_skill.py").write_text("NAME = 'alpha'\n", encoding="utf-8")
+
+    (skills_dir / "alpha_skill.py").write_text(
+        "NAME = 'alpha'\nVERSION = '1.0'\n",
+        encoding="utf-8"
+    )
 
     interface = ChatInterface(skills_dir=skills_dir)
     skills = interface.list_skills()
@@ -98,13 +56,21 @@ def test_skill_loading_integration(tmp_path: Path):
     assert "alpha_skill" in skills
     assert len(skills) >= 1
 
+    # Verify skill module was actually loaded (not a stub)
+    assert hasattr(interface.loaded_skills["alpha_skill"], "NAME")
+    assert interface.loaded_skills["alpha_skill"].NAME == "alpha"
+
 
 def test_lmstudio_connection_mock():
-    response = MagicMock()
-    response.__enter__.return_value.status = 200
+    """Integration: LMStudioClient initializes and can check availability (with mocked HTTP)."""
+    response_mock = MagicMock()
+    response_mock.__enter__.return_value.status = 200
 
-    mocked_urlopen = MagicMock(return_value=response)
-    client = LMStudioClient(base_url="http://localhost:1234", opener=mocked_urlopen)
+    with patch("urllib.request.urlopen", return_value=response_mock) as mock_urlopen:
+        client = LMStudioClient(base_url="http://localhost:1234")
+        is_available = client.is_available()
 
-    assert client.is_available() is True
-    mocked_urlopen.assert_called_once()
+        assert is_available is True
+        mock_urlopen.assert_called_once()
+        called_url = mock_urlopen.call_args[0][0]
+        assert "http://localhost:1234/v1/models" in called_url
