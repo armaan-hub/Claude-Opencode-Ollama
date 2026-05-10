@@ -7,7 +7,7 @@
 
 ## Overview
 
-Jarvis is a voice-activated AI workbench launcher for macOS. A single command (`jarvis`) opens a pre-configured split-screen layout: VS Code on the left, a Zellij terminal workspace on the right containing all AI tools ready to use. A wake phrase ("wake up I am home") activates the full setup, and a speaker verification layer ensures only you can trigger it.
+Jarvis is a voice-activated AI workbench launcher for macOS. A single command (`jarvis`) opens a pre-configured split-screen layout: VS Code on the left, a Zellij terminal workspace on the right containing all AI tools ready to use. Speaking **"Jarvis wake up"** or **"wake up Jarvis"** activates the full setup, and a speaker verification layer ensures only you can trigger it. After activation, Jarvis responds with a confirmation like *"Yes, sir"* or *"Welcome back"* via macOS text-to-speech.
 
 ---
 
@@ -76,7 +76,7 @@ These open as separate **macOS app windows on their own dedicated screen**, not 
 ## Component 3 — Voice Wake System
 
 ### What it does
-A background daemon that listens for the phrase **"wake up I am home"**. When recognized and verified as you, it triggers `jarvis`.
+A background daemon that listens for the phrases **"Jarvis wake up"** or **"wake up Jarvis"**. When recognized and verified as you, it triggers `jarvis` and responds with a confirmation.
 
 ### How it works
 
@@ -94,8 +94,12 @@ A background daemon that listens for the phrase **"wake up I am home"**. When re
   2. Match incoming speech against the enrolled voice profile
   3. Only trigger on both phrase match AND speaker match
 
-**Step 3 — Trigger Action**
+**Step 3 — Trigger Action + Response**
 - Runs `jarvis`
+- Speaks back via macOS TTS (say / AVSpeechSynthesizer) — one of:
+  - *"Yes, sir."*
+  - *"Welcome back."*
+  - *"At your service."*
 - Optionally also opens: Notes, Safari, Ollama app, LM Studio app
 
 ### Speaker Recognition on macOS
@@ -104,13 +108,13 @@ A background daemon that listens for the phrase **"wake up I am home"**. When re
 - No internet required — all processing is on-device
 - Speaker verification is separate from speech-to-text — it confirms "is this the same person who enrolled?"
 
-### Wake phrase options
+### Wake phrase
 | Phrase | Notes |
 |--------|-------|
-| "wake up I am home" | User's preference |
-| "hey jarvis" | Alternative, shorter |
+| "Jarvis wake up" | Primary — natural invocation |
+| "wake up Jarvis" | Alternative — same recognition |
 
-User chooses the phrase. No hot word service needed — the phrase is recognized via full speech-to-text + speaker verification.
+No hot word service needed — the phrase is recognized via full speech-to-text + speaker verification.
 
 ### Security note
 - The system only responds to your voice after enrollment
@@ -136,6 +140,7 @@ User chooses the phrase. No hot word service needed — the phrase is recognized
 - [ ] Write background listener service
 - [ ] Integrate speaker verification
 - [ ] Configure launchd agent for auto-start on login
+- [ ] Add TTS response ("Yes, sir" / "Welcome back" / "At your service")
 - [ ] Full end-to-end test
 
 ---
