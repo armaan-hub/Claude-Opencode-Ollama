@@ -87,7 +87,8 @@ class ChatInterface:
             if skill_name in sys.modules:
                 del sys.modules[skill_name]
             module = importlib.import_module(skill_name)
-            self._execute_skill_module(module, skill_file)
+            # importlib.import_module() already executes module code.
+            # Avoid executing again to prevent double-running skill side effects.
 
             self.loaded_skills[skill_name] = module
             self._skill_mtimes[skill_name] = skill_file.stat().st_mtime_ns
