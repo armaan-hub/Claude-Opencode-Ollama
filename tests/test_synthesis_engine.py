@@ -58,3 +58,15 @@ def test_generate_report_single_weak_source_has_mid_confidence():
     result = generate_report(docs, "What encryption is required?", MockLLMClient())
 
     assert 0.5 <= result["confidence_score"] <= 0.7
+
+
+def test_generate_report_deduplicates_sources_preserving_order():
+    docs = [
+        {"content": "Control A is required", "source": "nist_official"},
+        {"content": "Control A is required", "source": "nist_official"},
+        {"content": "Control A is required", "source": "fips_guidance"},
+    ]
+
+    result = generate_report(docs, "What control is required?", MockLLMClient())
+
+    assert result["sources_used"] == ["nist_official", "fips_guidance"]

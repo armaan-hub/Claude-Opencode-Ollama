@@ -113,13 +113,26 @@ def _compute_confidence(docs: List[dict]) -> float:
     return 0.6
 
 
+
+
+def _ordered_unique_sources(docs: List[dict]) -> list[str]:
+    seen = set()
+    sources = []
+    for doc in docs:
+        source = doc.get("source")
+        if not source or source in seen:
+            continue
+        seen.add(source)
+        sources.append(source)
+    return sources
+
 def generate_report(docs: List[dict], query: str, llm_client) -> dict:
     """Generate report with synthesis, sources, confidence.
 
     Returns: {"synthesis": "...", "sources_used": [...], "confidence_score": 0.0-1.0}
     """
     synthesis = synthesize_docs(docs, llm_client)
-    sources_used = [doc.get("source") for doc in docs if doc.get("source")]
+    sources_used = _ordered_unique_sources(docs)
     confidence_score = float(_compute_confidence(docs))
 
     if query and query.lower() not in synthesis.lower():
