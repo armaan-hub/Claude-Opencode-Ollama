@@ -9,9 +9,22 @@ Manages batched execution of multiple retrieval queries with:
 """
 import asyncio
 import logging
-from typing import Any, Callable, List
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class RetrievalResult:
+    """Result of a single document retrieval attempt."""
+    documents: list[dict]
+    error: Optional[str] = None
+    timed_out: bool = False
+
+    @property
+    def success(self) -> bool:
+        """Whether retrieval succeeded."""
+        return not self.error and not self.timed_out
 
 
 async def parallel_retrieve(
@@ -54,6 +67,8 @@ async def parallel_retrieve(
         return []
     
     all_results = []
+    errors: list[str] = []
+    successful_retrieval = False
     
     # Process queries in batches
     for batch_start in range(0, len(queries), batch_size):
@@ -66,18 +81,26 @@ async def parallel_retrieve(
             for query in batch_queries
         ]
         
-        batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
-        
+        batch_results = await asyncio.gather(*batch_tasks)
+
         # Process batch results and deduplicate
         for query, result in zip(batch_queries, batch_results):
-            if isinstance(result, Exception):
-                logger.warning(f"Error retrieving '{query}': {result}")
+            if result.success:
+                # Deduplicate results within batch
+                deduplicated = _deduplicate_results(result.documents)
+                all_results.append(deduplicated)
+                successful_retrieval = True
+            elif result.timed_out:
+                logger.warning(f"Timeout retrieving '{query}' (timeout={timeout}s)")
                 all_results.append([])
             else:
-                # Deduplicate results within batch
-                deduplicated = _deduplicate_results(result)
-                all_results.append(deduplicated)
-    
+                logger.error(f"Error retrieving '{query}': {result.error}")
+                errors.append(f"{query}: {result.error}")
+                all_results.append([])
+
+    if errors and not successful_retrieval:
+        raise RuntimeError(f"All retrieval batches failed: {'; '.join(errors)}")
+
     return all_results
 
 
@@ -85,7 +108,7 @@ async def _retrieve_with_timeout(
     query: str,
     retriever: Any,
     timeout: float,
-) -> list[dict]:
+) -> RetrievalResult:
     """Execute single query retrieval with timeout.
     
     Args:
@@ -94,19 +117,19 @@ async def _retrieve_with_timeout(
         timeout: Timeout in seconds
     
     Returns:
-        List of result documents, or empty list on timeout
+        Structured retrieval result with documents and error metadata
     """
     try:
         # Handle both async and sync retrievers by checking if retrieve is awaitable
         retrieve_coro = retriever.retrieve(query)
         result = await asyncio.wait_for(retrieve_coro, timeout=timeout)
-        return result if result else []
+        return RetrievalResult(documents=result if result else [])
     except asyncio.TimeoutError:
-        logger.warning(f"Timeout retrieving '{query}' (timeout={timeout}s)")
-        return []
+        logger.warning(f"Retrieval timed out for query: {query}")
+        return RetrievalResult(documents=[], error="Timeout", timed_out=True)
     except Exception as e:
-        logger.error(f"Error retrieving '{query}': {type(e).__name__}: {e}")
-        return []
+        logger.error(f"Retrieval failed for query: {query}: {e}", exc_info=True)
+        return RetrievalResult(documents=[], error=str(e), timed_out=False)
 
 
 def _deduplicate_results(results: list[dict]) -> list[dict]:

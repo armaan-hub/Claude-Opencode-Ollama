@@ -7,7 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from universal_llm.retriever_orchestrator import parallel_retrieve
+from universal_llm.retriever_orchestrator import (
+    _retrieve_with_timeout,
+    parallel_retrieve,
+)
 
 
 class MockRetriever:
@@ -228,6 +231,41 @@ class TestTimeoutHandling:
         
         assert len(results) == 3
         assert all(len(r) > 0 for r in results)
+
+
+@pytest.mark.asyncio
+async def test_retrieval_result_timeout():
+    """Verify timeout is properly communicated."""
+    retriever = MagicMock()
+    retriever.retrieve = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    result = await _retrieve_with_timeout("test", retriever, timeout=0.1)
+
+    assert result.timed_out is True
+    assert result.error == "Timeout"
+    assert result.documents == []
+
+
+@pytest.mark.asyncio
+async def test_retrieval_result_error():
+    """Verify errors are communicated (not silently swallowed)."""
+    retriever = MagicMock()
+    retriever.retrieve = AsyncMock(side_effect=ValueError("Invalid docs"))
+
+    result = await _retrieve_with_timeout("test", retriever, timeout=0.1)
+
+    assert result.timed_out is False
+    assert "Invalid docs" in result.error
+    assert result.documents == []
+
+
+def test_parallel_retrieve_all_failed_raises():
+    """Verify if all batches fail, error is raised (not empty list returned)."""
+    retriever = MagicMock()
+    retriever.retrieve = AsyncMock(side_effect=RuntimeError("Service down"))
+
+    with pytest.raises(RuntimeError, match="All retrieval batches failed"):
+        asyncio.run(parallel_retrieve(["q1", "q2", "q3"], retriever, batch_size=2))
 
 
 class TestConcurrency:
