@@ -82,10 +82,9 @@ class Config:
         """
         Save configuration to file with fcntl locking.
         
-        Acquires an exclusive lock on the config file before writing
-        to prevent concurrent write conflicts. Lock times out after 5 seconds.
-        
-        Uses atomic write via temporary file to prevent partial writes.
+        Acquires an exclusive lock on the config file before writing.
+        Implements read-modify-write cycle to prevent data loss under
+        concurrent access.
         
         Raises:
             LockTimeoutError: If lock cannot be acquired within timeout
@@ -94,29 +93,42 @@ class Config:
         lock_file = None
         temp_file = None
         try:
-            # Create a temporary file in the same directory as the target file
-            # to ensure atomic rename works
+            # Open config file in append mode to avoid truncating before lock
+            lock_file = open(self.path, 'a')
+            self._acquire_lock_with_timeout(lock_file)
+            
+            # Under lock: read latest state from disk
+            if self.path.exists():
+                try:
+                    with open(self.path) as f:
+                        disk_data = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    disk_data = {}
+            else:
+                disk_data = {}
+            
+            # Merge in-memory changes with disk state
+            # In-memory state wins (represents current thread's changes)
+            disk_data.update(self.data)
+            
+            # Create temporary file in same directory for atomic write
             temp_fd, temp_path = tempfile.mkstemp(
                 dir=self.path.parent,
                 prefix='.config_tmp_'
             )
             temp_file = open(temp_fd, 'w', closefd=True)
             
-            # Write to temporary file
-            json.dump(self.data, temp_file, indent=2)
+            # Write merged state to temp file
+            json.dump(disk_data, temp_file, indent=2)
             temp_file.flush()
-            
-            # Now acquire lock on the actual config file
-            # Open in 'a' mode to avoid truncating before lock is acquired
-            lock_file = open(self.path, 'a')
-            self._acquire_lock_with_timeout(lock_file)
-            
-            # Atomically replace the original file with the temp file
             temp_file.close()
             temp_file = None
             
-            # Use rename which is atomic on Unix systems
+            # Atomically replace original with temp (still under lock)
             Path(temp_path).replace(self.path)
+            
+            # Update in-memory state to match disk (consistency)
+            self.data = disk_data
             
             logger.debug("Config saved with lock")
             
