@@ -2,6 +2,7 @@
 Embedding Provider UI Endpoints for Universal LLM Settings.
 """
 
+from threading import Lock
 from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, status
@@ -94,6 +95,7 @@ class EmbeddingState:
 
 
 _state = EmbeddingState()
+_state_lock = Lock()
 
 
 def _validate_provider_config(provider: str, config: Dict[str, Any]) -> None:
@@ -136,24 +138,30 @@ def create_embedding_router() -> APIRouter:
     @router.post("/set-active", response_model=ActivateEmbeddingResponse)
     def set_active_embedding_provider(request: EmbeddingProviderRequest):
         _validate_provider_config(request.provider, request.config)
-        _state.active_provider = request.provider
-        _state.config = request.config
-        _state.metrics["activation_count"] += 1
+        with _state_lock:
+            _state.active_provider = request.provider
+            _state.config = request.config
+            _state.metrics["activation_count"] += 1
         return ActivateEmbeddingResponse(status="activated")
 
     @router.post("/test", response_model=TestEmbeddingResponse)
     def test_embedding_provider(request: EmbeddingProviderRequest):
         _validate_provider_config(request.provider, request.config)
-        _state.metrics["test_calls"] += 1
-        _state.metrics["last_tested_provider"] = request.provider
+        with _state_lock:
+            _state.metrics["test_calls"] += 1
+            _state.metrics["last_tested_provider"] = request.provider
         return TestEmbeddingResponse(status="ok")
 
     @router.get("/status", response_model=EmbeddingStatusResponse)
     def get_embedding_status():
+        with _state_lock:
+            active_provider = _state.active_provider
+            config = _state.config.copy()
+            metrics = _state.metrics.copy()
         return EmbeddingStatusResponse(
-            active_provider=_state.active_provider,
-            config=_state.config,
-            metrics=_state.metrics,
+            active_provider=active_provider,
+            config=config,
+            metrics=metrics,
         )
 
     return router

@@ -5,6 +5,32 @@ from fastapi.testclient import TestClient
 from universal_llm.embedding_endpoints import create_embedding_router
 
 
+@pytest.fixture(autouse=True)
+def reset_embedding_state():
+    """Reset embedding state before each test to prevent cross-test contamination."""
+    from universal_llm.embedding_endpoints import _state, _state_lock
+
+    with _state_lock:
+        _state.active_provider = None
+        _state.config = {}
+        _state.metrics = {
+            "test_calls": 0,
+            "activation_count": 0,
+            "last_tested_provider": None,
+        }
+
+    yield
+
+    with _state_lock:
+        _state.active_provider = None
+        _state.config = {}
+        _state.metrics = {
+            "test_calls": 0,
+            "activation_count": 0,
+            "last_tested_provider": None,
+        }
+
+
 @pytest.fixture
 def app():
     app = FastAPI()
@@ -66,3 +92,11 @@ async def test_set_active_embedding_provider_rejects_unknown_provider(client):
         json={"provider": "unknown", "config": {"model": "x"}},
     )
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_embedding_state_lock_exists():
+    from universal_llm.embedding_endpoints import _state_lock
+
+    assert hasattr(_state_lock, "acquire")
+    assert hasattr(_state_lock, "release")
