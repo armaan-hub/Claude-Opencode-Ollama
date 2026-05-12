@@ -167,20 +167,11 @@ function getEndpoint(modelId) {
 }
 
 // ─── Active model override ────────────────────────────────────────────────────
-let _activeModelCache = null;
-let _activeModelMtime = 0;
-
 function readActiveModel() {
   try {
-    const stat = fs.statSync(ACTIVE_MODEL_PATH);
-    if (stat.mtimeMs !== _activeModelMtime) {
-      _activeModelCache = fs.readFileSync(ACTIVE_MODEL_PATH, 'utf8').trim() || null;
-      _activeModelMtime = stat.mtimeMs;
-    }
-    return _activeModelCache;
+    const content = fs.readFileSync(ACTIVE_MODEL_PATH, 'utf8').trim();
+    return content || null;
   } catch {
-    _activeModelCache = null;
-    _activeModelMtime = 0;
     return null;
   }
 }
@@ -796,6 +787,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <input class="key-input" id="inp-free" type="password" placeholder="sk-…">
             <button class="btn-ghost" onclick="toggleKey('inp-free',this)">👁 Show</button>
           </div>
+          <div class="key-row">
+            <span class="key-lbl">Groq <span class="badge-free">free tier</span></span>
+            <input class="key-input" id="inp-groq" type="password" placeholder="gsk_…">
+            <button class="btn-ghost" onclick="toggleKey('inp-groq',this)">👁 Show</button>
+          </div>
+          <div class="key-row">
+            <span class="key-lbl">Nvidia NIM <span class="badge-free">free credits</span></span>
+            <input class="key-input" id="inp-nvidia" type="password" placeholder="nvapi-…">
+            <button class="btn-ghost" onclick="toggleKey('inp-nvidia',this)">👁 Show</button>
+          </div>
+          <div class="key-row">
+            <span class="key-lbl">OpenRouter <span class="badge-free">free models</span></span>
+            <input class="key-input" id="inp-openrouter" type="password" placeholder="sk-or-…">
+            <button class="btn-ghost" onclick="toggleKey('inp-openrouter',this)">👁 Show</button>
+          </div>
           <button class="btn" onclick="saveKeys()">💾 Save Keys</button>
         </div>
       </div>
@@ -865,6 +871,9 @@ async function loadConfig(){
   document.getElementById('d-summary').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go models: <strong style="color:#58a6ff">'+(cfg.goModels||[]).length+'</strong> &nbsp;·&nbsp; Free models: <strong style="color:#3fb950">'+(cfg.freeModels||[]).length+'</strong> &nbsp;·&nbsp; No-vision: <strong style="color:#d29922">'+(cfg.nonVisionModels||[]).length+'</strong></div>';
   document.getElementById('inp-go').value=cfg.apiKeyGo||'';
   document.getElementById('inp-free').value=cfg.apiKeyFree||'';
+  document.getElementById('inp-groq').value=cfg.groqApiKey||'';
+  document.getElementById('inp-nvidia').value=cfg.nvidiaApiKey||'';
+  document.getElementById('inp-openrouter').value=cfg.openrouterApiKey||'';
   renderModels();
 }
 function renderModels(){['go','free','nv'].forEach(cls=>{const key=cls==='go'?'goModels':cls==='free'?'freeModels':'nonVisionModels';const container=document.getElementById('tags-'+cls);container.innerHTML='';(cfg[key]||[]).forEach((m,i)=>{const span=document.createElement('span');span.className='tag '+cls;const dot=document.createElement('span');dot.className='dot-sm';const label=document.createTextNode(m);const x=document.createElement('span');x.className='tag-x';x.textContent='✕';x.onclick=()=>removeTag(key,cls,i);span.append(dot,label,x);container.appendChild(span);});});}
@@ -872,7 +881,7 @@ function removeTag(key,cls,idx){cfg[key].splice(idx,1);renderModels();}
 function addTag(cls){const inpId='add-'+cls;const val=document.getElementById(inpId).value.trim();if(!val)return;const key=cls==='go'?'goModels':cls==='free'?'freeModels':'nonVisionModels';if(!cfg[key])cfg[key]=[];if(!cfg[key].includes(val)){cfg[key].push(val);renderModels();}document.getElementById(inpId).value='';}
 async function saveModels(){const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goModels:cfg.goModels,freeModels:cfg.freeModels,nonVisionModels:cfg.nonVisionModels})});const j=await r.json();toast(j.ok?'✅ Model routing saved':'❌ '+j.error,!j.ok);}
 function toggleKey(id,btn){const inp=document.getElementById(id);const h=inp.type==='password';inp.type=h?'text':'password';inp.classList.toggle('revealed',h);btn.textContent=h?'🙈 Hide':'👁 Show';}
-async function saveKeys(){const go=document.getElementById('inp-go').value.trim();const free=document.getElementById('inp-free').value.trim();const body={};if(go&&!go.includes('•'))body.apiKeyGo=go;if(free&&!free.includes('•'))body.apiKeyFree=free;if(!Object.keys(body).length){toast('Enter new key values first',true);return;}const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();toast(j.ok?'✅ Keys saved & hot-reloaded':'❌ '+j.error,!j.ok);if(j.ok)loadConfig();}
+async function saveKeys(){const go=document.getElementById('inp-go').value.trim();const free=document.getElementById('inp-free').value.trim();const groq=document.getElementById('inp-groq').value.trim();const nvidia=document.getElementById('inp-nvidia').value.trim();const openrouter=document.getElementById('inp-openrouter').value.trim();const body={};if(go&&!go.includes('•'))body.apiKeyGo=go;if(free&&!free.includes('•'))body.apiKeyFree=free;if(groq&&!groq.includes('•'))body.groqApiKey=groq;if(nvidia&&!nvidia.includes('•'))body.nvidiaApiKey=nvidia;if(openrouter&&!openrouter.includes('•'))body.openrouterApiKey=openrouter;if(!Object.keys(body).length){toast('Enter new key values first',true);return;}const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();toast(j.ok?'✅ Keys saved & hot-reloaded':'❌ '+j.error,!j.ok);if(j.ok)loadConfig();}
 function startLogs(){if(logEs){logEs.close();logEs=null;}logEs=new EventSource('/api/logs');logEs.addEventListener('log',e=>{if(logPaused)return;try{appendLog(JSON.parse(e.data));}catch{}});logEs.onerror=()=>{logEs.close();logEs=null;setTimeout(()=>{if(document.getElementById('sec-logs').style.display!=='none')startLogs();},5000);};}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function appendLog(e){const box=document.getElementById('log-box');const d=document.createElement('div');const safe=esc(e.line);const c=safe.replace(/(\[TOOL_CALL\][^\\n]*)/,'<span class="log-tool">$1</span>').replace(/(\[STREAM DONE\][^\\n]*)/,'<span class="log-done">$1</span>').replace(/(\[STREAM END-FALLBACK\][^\\n]*)/,'<span class="log-err">$1</span>').replace(/(glm-\S+|kimi-\S+|qwen\S+|deepseek\S+|mimo\S+|minimax\S+)/,'<span class="log-model">$1</span>');d.innerHTML='<span class="log-ts">'+esc(e.ts)+'</span> <span class="'+(e.level==='error'?'log-err':'log-info')+'">'+c+'</span>';box.appendChild(d);while(box.children.length>200)box.removeChild(box.firstChild);box.scrollTop=box.scrollHeight;}
@@ -1083,10 +1092,24 @@ const server = http.createServer((req, res) => {
   }
 
   // Messages — Anthropic → OpenAI conversion
-  if (method === 'POST' && (path === '/v1/messages' || path.startsWith('/v1/messages'))) {
+  if (method === 'POST' && path === '/v1/messages') {
+    const MAX_BODY = 10 * 1024 * 1024; // 10 MB
     let rawBody = '';
-    req.on('data', d => rawBody += d);
+    let bodyTooLarge = false;
+    req.on('data', d => {
+      if (bodyTooLarge) return;
+      rawBody += d;
+      if (rawBody.length > MAX_BODY) {
+        bodyTooLarge = true;
+        if (!res.headersSent) {
+          res.writeHead(413, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request body too large' }));
+        }
+        req.destroy();
+      }
+    });
     req.on('end', () => {
+      if (bodyTooLarge) return;
       let anthropicBody;
       try { anthropicBody = JSON.parse(rawBody); } catch (e) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
