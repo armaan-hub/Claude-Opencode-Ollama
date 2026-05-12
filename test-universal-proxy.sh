@@ -120,6 +120,77 @@ else
   ((FAIL++))
 fi
 
+# ── Test 11: /api/providers returns 8 providers ──────────────────────────────
+echo -n "Test 11: /api/providers has 8 providers ... "
+COUNT=$(curl -s http://localhost:4001/api/providers | python3 -c "import sys,json; print(len(json.load(sys.stdin)['providers']))")
+if [ "$COUNT" = "8" ]; then
+  echo "PASS (got $COUNT)"
+  PASS=$((PASS+1))
+else
+  echo "FAIL (got $COUNT, expected 8)"
+  FAIL=$((FAIL+1))
+fi
+
+# ── Test 12: /api/providers includes github-copilot ──────────────────────────
+echo -n "Test 12: github-copilot provider present ... "
+HAS=$(curl -s http://localhost:4001/api/providers | python3 -c "import sys,json; d=json.load(sys.stdin); print('yes' if any(p['id']=='github-copilot' for p in d['providers']) else 'no')")
+if [ "$HAS" = "yes" ]; then
+  echo "PASS"
+  PASS=$((PASS+1))
+else
+  echo "FAIL"
+  FAIL=$((FAIL+1))
+fi
+
+# ── Test 13: /providers HTML page returns 200 ────────────────────────────────
+echo -n "Test 13: /providers page returns 200 ... "
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4001/providers)
+if [ "$STATUS" = "200" ]; then
+  echo "PASS"
+  PASS=$((PASS+1))
+else
+  echo "FAIL (got HTTP $STATUS)"
+  FAIL=$((FAIL+1))
+fi
+
+# ── Test 14: /api/auth/github/start redirects (302) ──────────────────────────
+echo -n "Test 14: /api/auth/github/start redirects ... "
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4001/api/auth/github/start)
+# Redirects to /providers?error=missing-client-id if no client ID, or to GitHub if configured
+if [ "$STATUS" = "302" ]; then
+  echo "PASS (got 302)"
+  PASS=$((PASS+1))
+else
+  echo "FAIL (got HTTP $STATUS, expected 302)"
+  FAIL=$((FAIL+1))
+fi
+
+# ── Test 15: /provider slash command file exists ──────────────────────────────
+echo -n "Test 15: /provider slash command file exists ... "
+if [ -f "$HOME/.claude/commands/provider.md" ]; then
+  echo "PASS"
+  PASS=$((PASS+1))
+else
+  echo "FAIL (file missing)"
+  FAIL=$((FAIL+1))
+fi
+
+# ── Test 16: /api/providers/groq/connect accepts API key POST ────────────────
+echo -n "Test 16: /api/providers/groq/connect endpoint ... "
+RESP=$(curl -s -X POST http://localhost:4001/api/providers/groq/connect \
+  -H "Content-Type: application/json" \
+  -d '{"apiKey":"test-key-do-not-use"}')
+FIELD=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok','missing'))" 2>/dev/null)
+if [ "$FIELD" = "True" ] || [ "$FIELD" = "true" ]; then
+  echo "PASS"
+  PASS=$((PASS+1))
+  # Restore: remove the test key
+  curl -s -X POST http://localhost:4001/api/providers/groq/disconnect > /dev/null
+else
+  echo "FAIL (got: $RESP)"
+  FAIL=$((FAIL+1))
+fi
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1
