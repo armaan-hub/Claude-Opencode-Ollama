@@ -39,6 +39,10 @@ const OLLAMA_BASE  = '/v1';
 const COPILOT_HOST           = 'api.githubcopilot.com';
 const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
 const COPILOT_INTEGRATION_ID = 'vscode-chat';
+const GEMINI_HOST  = 'generativelanguage.googleapis.com';
+const GEMINI_BASE  = '/v1beta/openai';   // OpenAI-compatible endpoint
+const OPENAI_HOST  = 'api.openai.com';
+const OPENAI_BASE  = '/v1';
 const COPILOT_MODELS = [
   'copilot/claude-opus-4.7',
   'copilot/claude-opus-4.6-1m',
@@ -82,6 +86,20 @@ const DEFAULT_CONFIG = {
   groqApiKey: '',
   nvidiaApiKey: '',
   openrouterApiKey: '',
+  geminiApiKey:  '',
+  geminiModels: [
+    'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash',
+    'gemini-1.5-pro', 'gemini-1.5-flash',
+  ],
+  openaiApiKey:  '',
+  openaiModels: [
+    'gpt-4o', 'gpt-4o-mini', 'o3-mini', 'o4-mini',
+    'gpt-4.1', 'codex-mini-latest',
+  ],
+  githubOAuthClientId:     '',
+  githubOAuthClientSecret: '',
+  githubOAuthToken:        '',   // stored after successful OAuth
+  githubOAuthUsername:     '',   // e.g. 'armaan-hub'
   groqModels: [
     'llama-3.3-70b-versatile',
     'llama-3.1-8b-instant',
@@ -173,9 +191,13 @@ function rebuildSets() {
   GROQ_API_KEY      = typeof CFG.groqApiKey       === 'string' ? CFG.groqApiKey       : DEFAULT_CONFIG.groqApiKey;
   NVIDIA_API_KEY    = typeof CFG.nvidiaApiKey     === 'string' ? CFG.nvidiaApiKey     : DEFAULT_CONFIG.nvidiaApiKey;
   OPENROUTER_API_KEY= typeof CFG.openrouterApiKey === 'string' ? CFG.openrouterApiKey : DEFAULT_CONFIG.openrouterApiKey;
+  GEMINI_MODELS     = new Set(Array.isArray(CFG.geminiModels)   ? CFG.geminiModels   : DEFAULT_CONFIG.geminiModels);
+  OPENAI_MODELS     = new Set(Array.isArray(CFG.openaiModels)   ? CFG.openaiModels   : DEFAULT_CONFIG.openaiModels);
+  GEMINI_API_KEY    = typeof CFG.geminiApiKey  === 'string' ? CFG.geminiApiKey  : DEFAULT_CONFIG.geminiApiKey;
+  OPENAI_API_KEY    = typeof CFG.openaiApiKey  === 'string' ? CFG.openaiApiKey  : DEFAULT_CONFIG.openaiApiKey;
 }
 
-let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY;
+let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY;
 rebuildSets();
 
 function getEndpoint(modelId) {
@@ -197,21 +219,40 @@ function readActiveModel() {
 let _copilotToken     = null;
 let _copilotTokenTime = 0;
 const COPILOT_TOKEN_TTL = 5 * 60 * 1000; // 5 minutes
+// ─── Per-provider request counter (in-memory, reset on proxy restart) ────────
+const REQUEST_COUNTS = {
+  'github-copilot': 0,
+  gemini: 0,
+  openai: 0,
+  groq: 0,
+  nvidia: 0,
+  openrouter: 0,
+  ollama: 0,
+  opencode: 0,
+};
+let _oauthState = ''; // CSRF state for GitHub OAuth flow
 
 function getCopilotToken(forceRefresh = false) {
   const now = Date.now();
   if (!forceRefresh && _copilotToken && now - _copilotTokenTime < COPILOT_TOKEN_TTL) {
     return _copilotToken;
   }
+  // Prefer stored OAuth token from our own GitHub OAuth App
+  if (CFG.githubOAuthToken) {
+    _copilotToken     = CFG.githubOAuthToken;
+    _copilotTokenTime = now;
+    return _copilotToken;
+  }
+  // Fallback: use gh CLI token
   try {
-    const { execSync } = require('child_process');
-    // NOTE: execSync blocks the event loop ~100-400ms on refresh. Acceptable for
-    // single-user proxy (5-min TTL = rare). For multi-user, use async exec + promise queue.
-    _copilotToken    = execSync('gh auth token', { encoding: 'utf8', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` } }).trim();
+    _copilotToken = require('child_process').execSync('gh auth token', {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
+    }).trim();
     _copilotTokenTime = now;
     return _copilotToken;
   } catch {
-    _copilotToken    = null;
+    _copilotToken     = null;
     _copilotTokenTime = 0;
     return null;
   }
