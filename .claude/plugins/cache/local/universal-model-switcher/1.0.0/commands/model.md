@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(echo *), Bash(mkdir *), Bash(cat *), Bash(rm *), Bash(curl *), Bash(python3 *)
+allowed-tools: Bash(printf *), Bash(mkdir *), Bash(cat *), Bash(rm *), Bash(curl *), Bash(python3 *)
 description: Hot-swap LLM model without restarting. Usage: /model [name|list|clear|status]
 ---
 
@@ -36,10 +36,12 @@ Show the current model and list above. Ask: "Which model would you like? Type th
 When they reply with a name, handle it as CASE B.
 
 **CASE B — $ARGUMENTS is a model name (not list/clear/status):**
-Run these bash commands in sequence:
-1. `mkdir -p ~/.claude`
-2. `echo "MODELNAME" > ~/.claude/active-model`  ← replace MODELNAME with the exact model from $ARGUMENTS
-Then reply: "✅ Switched to **MODELNAME**. Your next message will use this model. To undo: `/model clear`"
+First check if the model name from $ARGUMENTS appears in the ## Available Models list shown above.
+- If NOT found: reply "❌ Unknown model: **$ARGUMENTS**. Use `/model list` to see available models." and stop.
+- If found: run these bash commands in sequence:
+  1. `mkdir -p ~/.claude`
+  2. `printf '%s\n' 'MODELNAME' > ~/.claude/active-model`  ← replace MODELNAME with the exact model from $ARGUMENTS (use single quotes to prevent injection)
+  Then reply: "✅ Switched to **MODELNAME**. Your next message will use this model. To undo: `/model clear`"
 
 **CASE C — $ARGUMENTS is "clear":**
 Run: `rm -f ~/.claude/active-model`
