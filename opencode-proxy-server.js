@@ -39,8 +39,8 @@ const OLLAMA_BASE  = '/v1';
 const CONFIG_PATH = path.join(os.homedir(), 'opencode-proxy-config.json');
 
 const DEFAULT_CONFIG = {
-  apiKeyGo:   'sk-26fMit1MRTviuJrgYuXwbThKpCyNDPuTORYb1aCxenYQjyKRV8htRyYOLotjHQ2s',
-  apiKeyFree: 'sk-02c1qkVnuvWMoRCDCLkFJdyUpSSKB5HqiIXsgIoPv8CaFJMV8teamBJyrfzP5Etz',
+  apiKeyGo:   '',
+  apiKeyFree: '',
   goModels: [
     'glm-5', 'glm-5.1', 'kimi-k2.5', 'kimi-k2.6',
     'mimo-v2.5', 'mimo-v2.5-pro', 'mimo-v2-omni', 'mimo-v2-pro',
@@ -167,11 +167,20 @@ function getEndpoint(modelId) {
 }
 
 // ─── Active model override ────────────────────────────────────────────────────
+let _activeModelCache = null;
+let _activeModelMtime = 0;
+
 function readActiveModel() {
   try {
-    const content = fs.readFileSync(ACTIVE_MODEL_PATH, 'utf8').trim();
-    return content || null;
+    const stat = fs.statSync(ACTIVE_MODEL_PATH);
+    if (stat.mtimeMs !== _activeModelMtime) {
+      _activeModelCache = fs.readFileSync(ACTIVE_MODEL_PATH, 'utf8').trim() || null;
+      _activeModelMtime = stat.mtimeMs;
+    }
+    return _activeModelCache;
   } catch {
+    _activeModelCache = null;
+    _activeModelMtime = 0;
     return null;
   }
 }
@@ -915,6 +924,13 @@ const server = http.createServer((req, res) => {
       goModels:        CFG.goModels,
       freeModels:      CFG.freeModels,
       nonVisionModels: CFG.nonVisionModels,
+      groqApiKey:        CFG.groqApiKey       ? '•'.repeat(8) + CFG.groqApiKey.slice(-4)       : '',
+      nvidiaApiKey:      CFG.nvidiaApiKey     ? '•'.repeat(8) + CFG.nvidiaApiKey.slice(-4)     : '',
+      openrouterApiKey:  CFG.openrouterApiKey ? '•'.repeat(8) + CFG.openrouterApiKey.slice(-4) : '',
+      groqModels:        [...(CFG.groqModels       || DEFAULT_CONFIG.groqModels)],
+      nvidiaModels:      [...(CFG.nvidiaModels     || DEFAULT_CONFIG.nvidiaModels)],
+      openrouterModels:  [...(CFG.openrouterModels || DEFAULT_CONFIG.openrouterModels)],
+      ollamaModels:      [...(CFG.ollamaModels     || DEFAULT_CONFIG.ollamaModels)],
     };
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(safe));
@@ -942,6 +958,13 @@ const server = http.createServer((req, res) => {
         if (Array.isArray(update.goModels))        CFG.goModels        = update.goModels;
         if (Array.isArray(update.freeModels))      CFG.freeModels      = update.freeModels;
         if (Array.isArray(update.nonVisionModels)) CFG.nonVisionModels = update.nonVisionModels;
+        if (update.groqApiKey       && typeof update.groqApiKey       === 'string' && !update.groqApiKey.includes('•'))       CFG.groqApiKey       = update.groqApiKey;
+        if (update.nvidiaApiKey     && typeof update.nvidiaApiKey     === 'string' && !update.nvidiaApiKey.includes('•'))     CFG.nvidiaApiKey     = update.nvidiaApiKey;
+        if (update.openrouterApiKey && typeof update.openrouterApiKey === 'string' && !update.openrouterApiKey.includes('•')) CFG.openrouterApiKey = update.openrouterApiKey;
+        if (Array.isArray(update.groqModels))       CFG.groqModels       = update.groqModels;
+        if (Array.isArray(update.nvidiaModels))     CFG.nvidiaModels     = update.nvidiaModels;
+        if (Array.isArray(update.openrouterModels)) CFG.openrouterModels = update.openrouterModels;
+        if (Array.isArray(update.ollamaModels))     CFG.ollamaModels     = update.ollamaModels;
         saveConfig(CFG);
         rebuildSets();
         console.log('[CONFIG] Saved and hot-reloaded');
@@ -1148,7 +1171,8 @@ const server = http.createServer((req, res) => {
         }
       }).catch(err => {
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Failed to reach OpenCode Zen', details: err.message }));
+        const providerName = providerInfo ? providerInfo.name : 'OpenCode Zen';
+        res.end(JSON.stringify({ error: `Failed to reach ${providerName}`, details: err.message }));
       });
     });
     return;
