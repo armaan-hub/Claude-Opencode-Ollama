@@ -35,14 +35,14 @@ const OPENROUTER_BASE = '/api/v1';
 const OLLAMA_HOST  = '127.0.0.1';
 const OLLAMA_PORT  = 11434;
 const OLLAMA_BASE  = '/v1';
-
-const COPILOT_HOST           = 'api.githubcopilot.com';
-const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
-const COPILOT_INTEGRATION_ID = 'vscode-chat';
 const GEMINI_HOST  = 'generativelanguage.googleapis.com';
 const GEMINI_BASE  = '/v1beta/openai';   // OpenAI-compatible endpoint
 const OPENAI_HOST  = 'api.openai.com';
 const OPENAI_BASE  = '/v1';
+
+const COPILOT_HOST           = 'api.githubcopilot.com';
+const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
+const COPILOT_INTEGRATION_ID = 'vscode-chat';
 const COPILOT_MODELS = [
   'copilot/claude-opus-4.7',
   'copilot/claude-opus-4.6-1m',
@@ -86,16 +86,8 @@ const DEFAULT_CONFIG = {
   groqApiKey: '',
   nvidiaApiKey: '',
   openrouterApiKey: '',
-  geminiApiKey:  '',
-  geminiModels: [
-    'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash',
-    'gemini-1.5-pro', 'gemini-1.5-flash',
-  ],
-  openaiApiKey:  '',
-  openaiModels: [
-    'gpt-4o', 'gpt-4o-mini', 'o3-mini', 'o4-mini',
-    'gpt-4.1', 'codex-mini-latest',
-  ],
+  geminiApiKey: '',
+  openaiApiKey: '',
   githubOAuthClientId:     '',
   githubOAuthClientSecret: '',
   githubOAuthToken:        '',   // stored after successful OAuth
@@ -123,6 +115,14 @@ const DEFAULT_CONFIG = {
     'qwen3:8b',
     'qwen3:14b',
     'llama3.3:70b',
+  ],
+  geminiModels: [
+    'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash',
+    'gemini-1.5-pro', 'gemini-1.5-flash',
+  ],
+  openaiModels: [
+    'gpt-4o', 'gpt-4o-mini', 'o3-mini', 'o4-mini',
+    'gpt-4.1', 'codex-mini-latest',
   ],
 };
 
@@ -245,6 +245,8 @@ function getCopilotToken(forceRefresh = false) {
   }
   // Fallback: use gh CLI token
   try {
+    // NOTE: execSync blocks the event loop ~100-400ms on refresh. Acceptable for
+    // single-user proxy (5-min TTL = rare). For multi-user, use async exec + promise queue.
     _copilotToken = require('child_process').execSync('gh auth token', {
       encoding: 'utf8',
       env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
