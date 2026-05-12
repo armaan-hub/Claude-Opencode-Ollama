@@ -1,67 +1,69 @@
 ---
-allowed-tools: Bash(printf *), Bash(mkdir *), Bash(cat *), Bash(rm *), Bash(curl *), Bash(python3 *)
-description: Hot-swap LLM model without restarting. Usage: /model [name|list|clear|status]
+allowed-tools: Bash(cat *), Bash(printf *), Bash(mkdir *), Bash(rm *), Bash(curl *), Bash(gh *), Bash(echo *)
+description: Switch LLM model/provider with auth status. Usage: /model [name|clear|status]
 ---
-
-## Current Active Model
-!`cat ~/.claude/active-model 2>/dev/null || echo "none (using session default)"`
-
-## Available Models (from proxy)
-!`curl -s --max-time 3 http://localhost:4001/v1/models 2>/dev/null | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    models = data.get('data', [])
-    if not models:
-        raise ValueError('empty')
-    by_provider = {}
-    for m in models:
-        owner = m.get('owned_by', 'opencode')
-        by_provider.setdefault(owner, []).append(m['id'])
-    order = ['github-copilot','groq','nvidia','openrouter','ollama','opencode']
-    for provider in order:
-        if provider in by_provider:
-            print(f'  [{provider.upper()}]')
-            for mid in by_provider[provider]:
-                print(f'    {mid}')
-    for provider, ids in by_provider.items():
-        if provider not in order:
-            print(f'  [{provider.upper()}]')
-            for mid in ids:
-                print(f'    {mid}')
-except Exception:
-    print('  ⚠️  Proxy not responding — is it running?')
-    print('  Start it: node ~/opencode-proxy-server.js')
-    print('  Or: launchctl start com.opencode.proxy')
-" 2>/dev/null || echo "  ⚠️  Proxy unreachable (localhost:4001)"`
 
 ## Your Task
 
 The user typed: **$ARGUMENTS**
 
-Handle exactly one case:
+**STEP 1 — Run these three Bash tool calls RIGHT NOW before doing anything else:**
 
-**CASE A — $ARGUMENTS is empty:**
-Show the current model and list above. Ask: "Which model would you like? Type the name exactly as shown, or type 'clear' to remove the override."
-When they reply with a name, handle it as CASE B.
+1. `cat ~/.claude/active-model 2>/dev/null || echo "none"`
+2. `curl -s --max-time 4 http://localhost:4001/v1/models 2>/dev/null || echo '{"error":"proxy unreachable on port 4001"}'`
+3. `gh auth whoami 2>/dev/null || echo "not-authenticated"`
 
-**CASE B — $ARGUMENTS is a model name (not list/clear/status):**
-First check if the model name from $ARGUMENTS appears in the ## Available Models list shown above.
-- If NOT found: reply "❌ Unknown model: **$ARGUMENTS**. Use `/model list` to see available models." and stop.
-- If found: run these bash commands:
-  1. `mkdir -p ~/.claude`
-  2. `printf '%s\n' 'MODELNAME' > ~/.claude/active-model`  ← replace MODELNAME with exact value from $ARGUMENTS
-  Then reply: "✅ Switched to **MODELNAME**. Your next message will use this model. To undo: `/model clear`"
+**STEP 2 — Always display this status block first (using results from Step 1):**
 
-**CASE C — $ARGUMENTS is "clear":**
-Run: `rm -f ~/.claude/active-model`
-Reply: "✅ Model override cleared. Using your session's default model."
+```
+🔐 Provider Authentication Status
+  GitHub Copilot : [if gh auth whoami returned a username → "✅ logged in as USERNAME"
+                    else → "❌ not logged in — run: gh auth login"]
+  Groq / NVIDIA / OpenRouter : API key (configured in proxy — no login needed)
+  Ollama         : local service — no auth needed
+  OpenCode       : free tier — no auth needed
 
-**CASE D — $ARGUMENTS is "list":**
-Show only the available models list (already shown above). No action needed.
+📍 Active model: [value from command 1, or "none — using session default"]
+```
 
-**CASE E — $ARGUMENTS is "status":**
-Run: `cat ~/.claude/active-model 2>/dev/null || echo "none (using session default)"`
-Reply with: "Active model: [result]"
+**STEP 3 — Display the model list** (parse the JSON from command 2):
 
-Keep responses to 1-2 lines. Do not start a new session or suggest restarting.
+Group models by their `owned_by` field, shown in this order:
+`github-copilot` → `groq` → `nvidia` → `openrouter` → `ollama` → everything else
+
+Format each group:
+```
+[GITHUB-COPILOT]  (requires: gh auth login)
+  copilot/claude-opus-4.7
+  copilot/gpt-5.4  ...
+
+[GROQ]  (requires: Groq API key — already configured)
+  groq/llama-4-scout  ...
+```
+
+If proxy returned `{"error":"..."}` → show:
+```
+⚠️  Proxy is not running. Start it:
+    launchctl start com.opencode.proxy
+    — or — node ~/opencode-proxy-server.js
+```
+
+**STEP 4 — Handle $ARGUMENTS:**
+
+- **Empty** → After showing steps 2+3, ask: "Which model? Type the exact ID (e.g. `copilot/gpt-5.4`) or `clear` to remove override."
+  When they reply with a model name → treat as a model name below.
+
+- **"status"** → Show steps 2+3 only. Done.
+
+- **"clear"** → Run: `rm -f ~/.claude/active-model` → Reply: "✅ Override cleared."
+
+- **A model name** (anything else):
+  1. Check the name appears in the curl JSON. If not found → "❌ Unknown model. Check the list with `/model`."
+  2. **Auth check**: If the name starts with `copilot/` AND gh auth returned "not-authenticated":
+     → Reply: "❌ GitHub Copilot requires login. Run `gh auth login` in your terminal, then try again." STOP — do NOT write the file.
+  3. If valid and auth OK:
+     - Run: `mkdir -p ~/.claude`
+     - Run: `printf '%s\n' 'MODELNAME' > ~/.claude/active-model`  (replace MODELNAME with the exact model ID)
+     - Reply: "✅ Switched to **MODELNAME**. Next message will use this model. (`/model clear` to undo)"
+
+Keep all replies concise. Do not suggest restarting the session.
