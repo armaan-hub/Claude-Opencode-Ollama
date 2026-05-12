@@ -168,16 +168,16 @@ run-claude-opencode() {
     "qwen3:14b              → Qwen3 14B (local)" \
     "llama3.3:70b           → Llama 3.3 70B (local)" \
     "── Groq (fast, free tier) ───────────────────────" \
-    "llama-3.3-70b-versatile" \
-    "llama-3.1-8b-instant" \
-    "deepseek-r1-distill-llama-70b-32768" \
+    "llama-3.3-70b-versatile → Llama 3.3 70B on Groq (free tier, fast)" \
+    "llama-3.1-8b-instant    → Llama 3.1 8B on Groq (fastest free)" \
+    "deepseek-r1-distill-llama-70b-32768 → DeepSeek R1 Distill on Groq (free)" \
     "── Nvidia NIM (free credits) ────────────────────" \
-    "meta/llama-3.3-70b-instruct" \
-    "meta/llama-3.1-8b-instruct" \
+    "meta/llama-3.3-70b-instruct → Llama 3.3 70B on Nvidia NIM (free credits)" \
+    "meta/llama-3.1-8b-instruct  → Llama 3.1 8B on Nvidia NIM (free credits)" \
     "── OpenRouter Free ──────────────────────────────" \
-    "google/gemma-3-27b-it:free" \
-    "meta-llama/llama-3.3-70b-instruct:free" \
-    "deepseek/deepseek-r1:free" \
+    "google/gemma-3-27b-it:free               → Gemma 3 27B via OpenRouter (free)" \
+    "meta-llama/llama-3.3-70b-instruct:free   → Llama 3.3 70B via OpenRouter (free)" \
+    "deepseek/deepseek-r1:free                → DeepSeek R1 via OpenRouter (free)" \
     | grep -v "^──" \
     | fzf --prompt="🤖 Model > " --height=22 --border \
           --header="↑↓ navigate  Enter select  Esc cancel" \
@@ -223,14 +223,17 @@ try:
     data = json.load(sys.stdin)
     by_provider = {}
     for m in data.get('data', []):
-        by_provider.setdefault(m.get('owned_by','opencode'), []).append(m['id'])
+        mid = m.get('id', '')
+        if mid:
+            by_provider.setdefault(m.get('owned_by', 'opencode'), []).append(mid)
     for provider, ids in sorted(by_provider.items()):
         print(f'  [{provider.upper()}]')
         for mid in ids:
             print(f'    {mid}')
-except:
+except Exception as e:
+    print(f'  Error: {e}')
     print('  Could not reach proxy at localhost:4001')
-" 2>/dev/null
+"
       ;;
     *)
       mkdir -p "$(dirname "$ACTIVE_MODEL_FILE")"
