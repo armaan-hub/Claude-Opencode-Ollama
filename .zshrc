@@ -178,8 +178,20 @@ run-claude-opencode() {
     "google/gemma-3-27b-it:free               → Gemma 3 27B via OpenRouter (free)" \
     "meta-llama/llama-3.3-70b-instruct:free   → Llama 3.3 70B via OpenRouter (free)" \
     "deepseek/deepseek-r1:free                → DeepSeek R1 via OpenRouter (free)" \
+    "── GitHub Copilot (subscription) ───────────────" \
+    "copilot/claude-opus-4.7     → Claude Opus 4.7 via GitHub Copilot (subscription)" \
+    "copilot/claude-opus-4.6-1m  → Claude Opus 4.6 1M context via GitHub Copilot" \
+    "copilot/claude-sonnet-4.6   → Claude Sonnet 4.6 via GitHub Copilot (subscription)" \
+    "copilot/claude-sonnet-4.5   → Claude Sonnet 4.5 via GitHub Copilot (subscription)" \
+    "copilot/claude-haiku-4.5    → Claude Haiku 4.5 via GitHub Copilot (subscription)" \
+    "copilot/claude-opus-4.5     → Claude Opus 4.5 via GitHub Copilot (subscription)" \
+    "copilot/gpt-5.4             → GPT-5.4 via GitHub Copilot (subscription)" \
+    "copilot/gpt-5.2             → GPT-5.2 via GitHub Copilot (subscription)" \
+    "copilot/gpt-5-mini          → GPT-5 mini via GitHub Copilot (subscription)" \
+    "copilot/gpt-4.1             → GPT-4.1 via GitHub Copilot (subscription)" \
+    "copilot/grok-code-fast-1    → Grok Code Fast 1 via GitHub Copilot (subscription)" \
     | grep -v "^──" \
-    | fzf --prompt="🤖 Model > " --height=22 --border \
+    | fzf --prompt="🤖 Model > " --height=30 --border \
           --header="↑↓ navigate  Enter select  Esc cancel" \
     | awk '{print $1}')
   [[ -z "$model" ]] && return 0
