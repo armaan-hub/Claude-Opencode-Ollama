@@ -1,6 +1,7 @@
 {
     "name": "universal-model-switcher",
     "description": "Hot-swap any LLM model inside Claude Code without restarting. Supports OpenCode, Groq, Nvidia NIM, OpenRouter, and Ollama.",
+    "version": "1.0.0",
     "author": {
         "name": "Armaan"
     }
