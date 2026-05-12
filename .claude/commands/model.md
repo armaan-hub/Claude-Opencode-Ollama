@@ -7,11 +7,13 @@ description: Hot-swap LLM model without restarting. Usage: /model [name|list|cle
 !`cat ~/.claude/active-model 2>/dev/null || echo "none (using session default)"`
 
 ## Available Models (from proxy)
-!`curl -s http://localhost:4001/v1/models 2>/dev/null | python3 -c "
+!`curl -s --max-time 3 http://localhost:4001/v1/models 2>/dev/null | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
     models = data.get('data', [])
+    if not models:
+        raise ValueError('empty')
     by_provider = {}
     for m in models:
         owner = m.get('owned_by', 'opencode')
@@ -27,10 +29,11 @@ try:
             print(f'  [{provider.upper()}]')
             for mid in ids:
                 print(f'    {mid}')
-except Exception as e:
-    print(f'  Could not fetch models: {e}')
-    print('  Make sure proxy is running: node ~/opencode-proxy-server.js')
-" 2>/dev/null`
+except Exception:
+    print('  ⚠️  Proxy not responding — is it running?')
+    print('  Start it: node ~/opencode-proxy-server.js')
+    print('  Or: launchctl start com.opencode.proxy')
+" 2>/dev/null || echo "  ⚠️  Proxy unreachable (localhost:4001)"`
 
 ## Your Task
 

@@ -196,6 +196,21 @@ run-claude-opencode() {
     | awk '{print $1}')
   [[ -z "$model" ]] && return 0
 
+  # ── Step 2b: GitHub Copilot auth check ────────────────────────
+  if [[ "$model" == copilot/* ]]; then
+    local copilot_token
+    copilot_token=$(gh auth token 2>/dev/null)
+    if [[ -z "$copilot_token" ]]; then
+      echo ""
+      echo "⚠️  GitHub Copilot requires authentication."
+      echo "   You are not logged in to GitHub."
+      echo ""
+      echo "   Fix: run  gh auth login  in a terminal, then try again."
+      return 1
+    fi
+    echo "🐙 GitHub Copilot: authenticated ✅ ($(gh auth whoami 2>/dev/null || echo 'logged in'))"
+  fi
+
   # ── Step 3: launch ────────────────────────────────────────────
   echo "🚀 Launching Claude Code [$mode] → $model"
   if [[ "$mode" == "full" ]]; then
