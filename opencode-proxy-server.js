@@ -205,6 +205,8 @@ function getCopilotToken(forceRefresh = false) {
   }
   try {
     const { execSync } = require('child_process');
+    // NOTE: execSync blocks the event loop ~100-400ms on refresh. Acceptable for
+    // single-user proxy (5-min TTL = rare). For multi-user, use async exec + promise queue.
     _copilotToken    = execSync('gh auth token', { encoding: 'utf8', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` } }).trim();
     _copilotTokenTime = now;
     return _copilotToken;
@@ -219,6 +221,7 @@ function getCopilotToken(forceRefresh = false) {
 function getProviderForModel(modelId) {
   if (modelId.startsWith('copilot/')) {
     const actualModel = modelId.slice('copilot/'.length);
+    if (!actualModel) return null; // malformed "copilot/" with no model name
     const token       = getCopilotToken();
     return {
       name:         'GitHub Copilot',
@@ -928,6 +931,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="panel-hdr"><span>🤖</span><span class="panel-title">Available Models (via Copilot subscription)</span></div>
         <div class="panel-body">
           <div style="font-size:12px;color:#8b949e;line-height:2.2">
+          <!-- NOTE: keep in sync with COPILOT_MODELS array in constants section above -->
             <code style="color:#58a6ff">copilot/claude-opus-4.7</code> · <code style="color:#58a6ff">copilot/claude-opus-4.6-1m</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.6</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.5</code><br>
             <code style="color:#3fb950">copilot/claude-haiku-4.5</code> · <code style="color:#58a6ff">copilot/gpt-5.4</code> · <code style="color:#3fb950">copilot/gpt-5.2</code> · <code style="color:#3fb950">copilot/gpt-5-mini</code><br>
             <code style="color:#3fb950">copilot/gpt-4.1</code> · <code style="color:#d29922">copilot/grok-code-fast-1</code> · <code style="color:#58a6ff">copilot/claude-opus-4.5</code>
@@ -1158,10 +1162,15 @@ const server = http.createServer((req, res) => {
       testRes.on('end', () => {
         try {
           const json = JSON.parse(data);
+          if (testRes.statusCode !== 200) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ ok: false, loggedIn: true,
+              message: `Copilot API returned ${testRes.statusCode}: ${json.message || 'check subscription'}` }));
+          }
           const models = json.data || [];
           const chatModels = models.filter(m => Array.isArray(m.supported_endpoints) && m.supported_endpoints.includes('/chat/completions'));
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true, loggedIn: true, modelCount: chatModels.length, totalModels: models.length }));
+          res.end(JSON.stringify({ ok: chatModels.length > 0, loggedIn: true, modelCount: chatModels.length, totalModels: models.length }));
         } catch {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, loggedIn: true, message: 'Unexpected response from Copilot API' }));
@@ -1179,7 +1188,7 @@ const server = http.createServer((req, res) => {
   if (method === 'POST' && path === '/api/copilot/login') {
     try {
       const { spawn } = require('child_process');
-      spawn('/opt/homebrew/bin/gh', ['auth', 'login', '--hostname', 'github.com', '--web'], {
+      spawn('gh', ['auth', 'login', '--hostname', 'github.com', '--web'], {
         detached: true,
         stdio: 'ignore',
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
