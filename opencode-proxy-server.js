@@ -36,6 +36,23 @@ const OLLAMA_HOST  = '127.0.0.1';
 const OLLAMA_PORT  = 11434;
 const OLLAMA_BASE  = '/v1';
 
+const COPILOT_HOST           = 'api.githubcopilot.com';
+const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
+const COPILOT_INTEGRATION_ID = 'vscode-chat';
+const COPILOT_MODELS = [
+  'copilot/claude-opus-4.7',
+  'copilot/claude-opus-4.6-1m',
+  'copilot/claude-sonnet-4.6',
+  'copilot/claude-sonnet-4.5',
+  'copilot/claude-haiku-4.5',
+  'copilot/claude-opus-4.5',
+  'copilot/gpt-5.4',
+  'copilot/gpt-5.2',
+  'copilot/gpt-5-mini',
+  'copilot/gpt-4.1',
+  'copilot/grok-code-fast-1',
+];
+
 const CONFIG_PATH = path.join(os.homedir(), 'opencode-proxy-config.json');
 
 const DEFAULT_CONFIG = {
@@ -176,8 +193,47 @@ function readActiveModel() {
   }
 }
 
+// ─── GitHub Copilot token cache ─────────────────────────────────────────────
+let _copilotToken     = null;
+let _copilotTokenTime = 0;
+const COPILOT_TOKEN_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCopilotToken(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && _copilotToken && now - _copilotTokenTime < COPILOT_TOKEN_TTL) {
+    return _copilotToken;
+  }
+  try {
+    const { execSync } = require('child_process');
+    _copilotToken    = execSync('gh auth token', { encoding: 'utf8', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` } }).trim();
+    _copilotTokenTime = now;
+    return _copilotToken;
+  } catch {
+    _copilotToken    = null;
+    _copilotTokenTime = 0;
+    return null;
+  }
+}
+
 // ─── Route model to provider ──────────────────────────────────────────────────
 function getProviderForModel(modelId) {
+  if (modelId.startsWith('copilot/')) {
+    const actualModel = modelId.slice('copilot/'.length);
+    const token       = getCopilotToken();
+    return {
+      name:         'GitHub Copilot',
+      host:         COPILOT_HOST,
+      base:         '',
+      port:         443,
+      ssl:          true,
+      apiKey:       token || '',
+      actualModel,
+      extraHeaders: {
+        'Editor-Version':        COPILOT_EDITOR_VERSION,
+        'Copilot-Integration-Id': COPILOT_INTEGRATION_ID,
+      },
+    };
+  }
   if (GROQ_MODELS.has(modelId))
     return { name: 'Groq',       host: GROQ_HOST,       base: GROQ_BASE,       port: 443,        ssl: true,  apiKey: GROQ_API_KEY };
   if (NVIDIA_MODELS.has(modelId))
@@ -190,7 +246,7 @@ function getProviderForModel(modelId) {
 }
 
 // ─── Generic provider forwarder ───────────────────────────────────────────────
-function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl) {
+function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const proto = ssl ? https : http;
     const options = {
@@ -204,6 +260,7 @@ function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl
         'User-Agent':     'universal-llm-proxy/2.0',
         'HTTP-Referer':   'https://github.com/anthropics/claude-code',
         'X-Title':        'Claude Code',
+        ...extraHeaders,
         ...(body ? { 'Content-Length': Buffer.byteLength(body) } : {}),
       },
     };
@@ -741,6 +798,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="nav-item" onclick="show('apikeys',this)">🔑 API Keys</div>
     <div class="nav-item" onclick="show('models',this)">🤖 Models</div>
     <div class="nav-item" onclick="show('ratelimits',this)">📈 Rate Limits</div>
+    <div class="nav-item" onclick="show('copilot',this)">🐙 GitHub Copilot</div>
   </div>
   <div class="main">
     <div id="sec-dashboard">
@@ -852,16 +910,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
     </div>
+    <div id="sec-copilot" style="display:none">
+      <div class="section-title">GitHub Copilot</div>
+      <div class="section-sub">Use GitHub Copilot subscription models — GPT-5.4, Claude Opus 4.7, Grok Code Fast, and more</div>
+      <div class="panel">
+        <div class="panel-hdr"><span>🐙</span><span class="panel-title">Connection Status</span></div>
+        <div class="panel-body">
+          <div id="copilot-status" style="font-size:13px;color:#8b949e;margin-bottom:14px">Checking…</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" onclick="testCopilot()">🔍 Test Connection</button>
+            <button class="btn" id="btn-copilot-login" onclick="loginCopilot()" style="display:none">🔑 Login with GitHub</button>
+            <button class="btn-ghost" id="btn-copilot-logout" onclick="logoutCopilot()" style="display:none">Disconnect</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr"><span>🤖</span><span class="panel-title">Available Models (via Copilot subscription)</span></div>
+        <div class="panel-body">
+          <div style="font-size:12px;color:#8b949e;line-height:2.2">
+            <code style="color:#58a6ff">copilot/claude-opus-4.7</code> · <code style="color:#58a6ff">copilot/claude-opus-4.6-1m</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.6</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.5</code><br>
+            <code style="color:#3fb950">copilot/claude-haiku-4.5</code> · <code style="color:#58a6ff">copilot/gpt-5.4</code> · <code style="color:#3fb950">copilot/gpt-5.2</code> · <code style="color:#3fb950">copilot/gpt-5-mini</code><br>
+            <code style="color:#3fb950">copilot/gpt-4.1</code> · <code style="color:#d29922">copilot/grok-code-fast-1</code> · <code style="color:#58a6ff">copilot/claude-opus-4.5</code>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:#8b949e">Use <code style="color:#58a6ff">/model copilot/gpt-5.4</code> in Claude Code or <code style="color:#58a6ff">set-model copilot/gpt-5.4</code> in terminal to switch.</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
 let cfg={},logPaused=false,logEs=null;
 function show(id,navEl){
-  ['dashboard','logs','apikeys','models','ratelimits'].forEach(s=>document.getElementById('sec-'+s).style.display=s===id?'':'none');
+  ['dashboard','logs','apikeys','models','ratelimits','copilot'].forEach(s=>document.getElementById('sec-'+s).style.display=s===id?'':'none');
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   if(navEl)navEl.classList.add('active');
   if(id==='logs'&&!logEs)startLogs();
+  if(id==='copilot')loadCopilotStatus();
 }
 async function loadConfig(){
   cfg=await(await fetch('/api/config')).json();
@@ -886,6 +971,39 @@ function startLogs(){if(logEs){logEs.close();logEs=null;}logEs=new EventSource('
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function appendLog(e){const box=document.getElementById('log-box');const d=document.createElement('div');const safe=esc(e.line);const c=safe.replace(/(\[TOOL_CALL\][^\\n]*)/,'<span class="log-tool">$1</span>').replace(/(\[STREAM DONE\][^\\n]*)/,'<span class="log-done">$1</span>').replace(/(\[STREAM END-FALLBACK\][^\\n]*)/,'<span class="log-err">$1</span>').replace(/(glm-\S+|kimi-\S+|qwen\S+|deepseek\S+|mimo\S+|minimax\S+)/,'<span class="log-model">$1</span>');d.innerHTML='<span class="log-ts">'+esc(e.ts)+'</span> <span class="'+(e.level==='error'?'log-err':'log-info')+'">'+c+'</span>';box.appendChild(d);while(box.children.length>200)box.removeChild(box.firstChild);box.scrollTop=box.scrollHeight;}
 function togglePause(){logPaused=!logPaused;document.getElementById('btn-pause').textContent=logPaused?'▶ Resume':'⏸ Pause';}
+async function loadCopilotStatus(){
+  const r=await fetch('/api/copilot/test').catch(()=>null);
+  if(!r){document.getElementById('copilot-status').textContent='⚠️ Proxy not responding';return;}
+  const j=await r.json();
+  const el=document.getElementById('copilot-status');
+  const loginBtn=document.getElementById('btn-copilot-login');
+  const logoutBtn=document.getElementById('btn-copilot-logout');
+  if(j.ok){
+    el.innerHTML='✅ <strong style="color:#3fb950">Connected</strong> · '+j.modelCount+' chat-compatible models available';
+    loginBtn.style.display='none';
+    logoutBtn.style.display='';
+  } else {
+    el.innerHTML='❌ <strong style="color:#f85149">Not connected</strong> — '+j.message;
+    loginBtn.style.display='';
+    logoutBtn.style.display='none';
+  }
+}
+async function testCopilot(){
+  document.getElementById('copilot-status').textContent='Testing…';
+  await loadCopilotStatus();
+}
+async function loginCopilot(){
+  const r=await fetch('/api/copilot/login',{method:'POST'});
+  const j=await r.json();
+  toast(j.ok?'🐙 '+j.message:'❌ '+j.message,!j.ok);
+  if(j.ok){setTimeout(()=>{loadCopilotStatus();},3000);}
+}
+async function logoutCopilot(){
+  const r=await fetch('/api/copilot/logout',{method:'POST'});
+  const j=await r.json();
+  toast(j.ok?'✅ Disconnected from GitHub':'❌ '+j.message,!j.ok);
+  if(j.ok)loadCopilotStatus();
+}
 function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(err?' error':'');setTimeout(()=>el.className='toast',3000);}
 loadConfig();
 </script>
@@ -1024,6 +1142,71 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ model: activeModel }));
   }
 
+  // ── GitHub Copilot auth endpoints ─────────────────────────────────────────
+  if (method === 'GET' && path === '/api/copilot/test') {
+    const token = getCopilotToken(true);
+    if (!token) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, loggedIn: false, message: "Not logged in to GitHub. Run 'gh auth login' in terminal." }));
+    }
+    const testReq = https.request({
+      hostname: COPILOT_HOST, port: 443, path: '/models', method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}`, 'Editor-Version': COPILOT_EDITOR_VERSION, 'User-Agent': 'universal-llm-proxy/2.0' },
+    }, testRes => {
+      let data = '';
+      testRes.on('data', d => data += d);
+      testRes.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const models = json.data || [];
+          const chatModels = models.filter(m => Array.isArray(m.supported_endpoints) && m.supported_endpoints.includes('/chat/completions'));
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, loggedIn: true, modelCount: chatModels.length, totalModels: models.length }));
+        } catch {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, loggedIn: true, message: 'Unexpected response from Copilot API' }));
+        }
+      });
+    });
+    testReq.on('error', err => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, loggedIn: false, message: err.message }));
+    });
+    testReq.end();
+    return;
+  }
+
+  if (method === 'POST' && path === '/api/copilot/login') {
+    try {
+      const { spawn } = require('child_process');
+      spawn('/opt/homebrew/bin/gh', ['auth', 'login', '--hostname', 'github.com', '--web'], {
+        detached: true,
+        stdio: 'ignore',
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
+      }).unref();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: 'Browser opened for GitHub login. Complete auth in browser then click "Test Connection".' }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: err.message }));
+    }
+    return;
+  }
+
+  if (method === 'POST' && path === '/api/copilot/logout') {
+    try {
+      require('child_process').execSync('gh auth logout --hostname github.com -y', { encoding: 'utf8', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` } });
+      _copilotToken     = null;
+      _copilotTokenTime = 0;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, message: err.message }));
+    }
+    return;
+  }
+
   // Models list — merge Go plan + free Zen models
   if (method === 'GET' && path === '/v1/models') {
     // Known context windows for OpenCode models (used to populate ctx% in Claude Code)
@@ -1074,7 +1257,14 @@ const server = http.createServer((req, res) => {
           const nvidiaModelsList     = [...NVIDIA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'nvidia',     context_length: 131072 }));
           const openrouterModelsList = [...OPENROUTER_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'openrouter', context_length: 131072 }));
           const ollamaModelsList     = [...OLLAMA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'ollama',     context_length: 131072 }));
-          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList] };
+          const copilotModelsList = COPILOT_MODELS.map(id => ({
+            id,
+            object:         'model',
+            created:        0,
+            owned_by:       'github-copilot',
+            context_length: 128000,
+          }));
+          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
         } catch {
@@ -1124,19 +1314,28 @@ const server = http.createServer((req, res) => {
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      const isStreaming = !!anthropicBody.stream;
-      const openaiBody  = anthropicToOpenAI(anthropicBody);
-      const bodyStr     = JSON.stringify(openaiBody);
-      const model       = anthropicBody.model;
+      const isStreaming  = !!anthropicBody.stream;
+      const model        = anthropicBody.model;
 
-      // Route to correct provider
+      // Route to correct provider (before body serialization so we can fix model name)
       const providerInfo = getProviderForModel(model);
+      const openaiBody   = anthropicToOpenAI(anthropicBody);
+      // Strip provider prefix for upstream (e.g. copilot/gpt-4.1 → gpt-4.1)
+      if (providerInfo?.actualModel) openaiBody.model = providerInfo.actualModel;
+      const bodyStr = JSON.stringify(openaiBody);
+
       let forwardPromise;
       if (providerInfo) {
+        // Error if Copilot but no token
+        if (providerInfo.name === 'GitHub Copilot' && !providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: "GitHub Copilot: not logged in. Run 'gh auth login' in terminal or use the proxy dashboard." }));
+        }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
         forwardPromise = forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
-          providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl);
+          providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
+          providerInfo.extraHeaders || {});
       } else {
         const { base: endpointBase, apiKey: routedKey } = getEndpoint(model);
         const fwdHeaders = { authorization: `Bearer ${routedKey}` };
