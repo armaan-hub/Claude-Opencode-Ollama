@@ -280,6 +280,32 @@ function getProviderForModel(modelId) {
       },
     };
   }
+  if (modelId.startsWith('gemini/')) {
+    const actualModel = modelId.slice('gemini/'.length);
+    if (!actualModel) return null;
+    return {
+      name:       'Google Gemini',
+      host:       GEMINI_HOST,
+      base:       GEMINI_BASE,
+      port:       443,
+      ssl:        true,
+      apiKey:     GEMINI_API_KEY,
+      actualModel,
+    };
+  }
+  if (modelId.startsWith('openai/')) {
+    const actualModel = modelId.slice('openai/'.length);
+    if (!actualModel) return null;
+    return {
+      name:       'OpenAI',
+      host:       OPENAI_HOST,
+      base:       OPENAI_BASE,
+      port:       443,
+      ssl:        true,
+      apiKey:     OPENAI_API_KEY,
+      actualModel,
+    };
+  }
   if (GROQ_MODELS.has(modelId))
     return { name: 'Groq',       host: GROQ_HOST,       base: GROQ_BASE,       port: 443,        ssl: true,  apiKey: GROQ_API_KEY };
   if (NVIDIA_MODELS.has(modelId))
@@ -1316,7 +1342,19 @@ const server = http.createServer((req, res) => {
             owned_by:       'github-copilot',
             context_length: 128000,
           }));
-          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList] };
+          const geminiModelsList = [];
+          if (GEMINI_API_KEY) {
+            for (const m of CFG.geminiModels || DEFAULT_CONFIG.geminiModels) {
+              geminiModelsList.push({ id: `gemini/${m}`, object: 'model', owned_by: 'google-gemini', created: 0 });
+            }
+          }
+          const openaiModelsList = [];
+          if (OPENAI_API_KEY) {
+            for (const m of CFG.openaiModels || DEFAULT_CONFIG.openaiModels) {
+              openaiModelsList.push({ id: `openai/${m}`, object: 'model', owned_by: 'openai', created: 0 });
+            }
+          }
+          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
         } catch {
@@ -1371,6 +1409,20 @@ const server = http.createServer((req, res) => {
 
       // Route to correct provider (before body serialization so we can fix model name)
       const providerInfo = getProviderForModel(model);
+      // Increment request counter for this provider
+      if (providerInfo) {
+        const pid = providerInfo.name === 'GitHub Copilot' ? 'github-copilot'
+                  : providerInfo.name === 'Google Gemini'  ? 'gemini'
+                  : providerInfo.name === 'OpenAI'         ? 'openai'
+                  : providerInfo.name === 'Groq'           ? 'groq'
+                  : providerInfo.name === 'Nvidia NIM'     ? 'nvidia'
+                  : providerInfo.name === 'OpenRouter'     ? 'openrouter'
+                  : providerInfo.name === 'Ollama'         ? 'ollama'
+                  : 'opencode';
+        REQUEST_COUNTS[pid] = (REQUEST_COUNTS[pid] || 0) + 1;
+      } else {
+        REQUEST_COUNTS.opencode = (REQUEST_COUNTS.opencode || 0) + 1;
+      }
       const openaiBody   = anthropicToOpenAI(anthropicBody);
       // Strip provider prefix for upstream (e.g. copilot/gpt-4.1 → gpt-4.1)
       if (providerInfo?.actualModel) openaiBody.model = providerInfo.actualModel;
