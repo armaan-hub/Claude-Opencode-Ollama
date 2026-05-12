@@ -1286,6 +1286,249 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── GitHub OAuth App flow ─────────────────────────────────────────────────
+  if (method === 'GET' && path === '/api/auth/github/start') {
+    if (!CFG.githubOAuthClientId) {
+      res.writeHead(302, { Location: '/providers?error=missing-client-id' });
+      return res.end();
+    }
+    _oauthState = require('crypto').randomBytes(16).toString('hex');
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(CFG.githubOAuthClientId)}&scope=read%3Auser&state=${_oauthState}`;
+    res.writeHead(302, { Location: authUrl });
+    return res.end();
+  }
+
+  if (method === 'GET' && path.startsWith('/api/auth/github/callback')) {
+    const qs = new URL(`http://localhost${path}`).searchParams;
+    const code  = qs.get('code')  || '';
+    const state = qs.get('state') || '';
+    if (!code || state !== _oauthState) {
+      res.writeHead(302, { Location: '/providers?error=bad-state' });
+      return res.end();
+    }
+    _oauthState = ''; // consume state
+
+    const exchangeBody = JSON.stringify({
+      client_id:     CFG.githubOAuthClientId,
+      client_secret: CFG.githubOAuthClientSecret,
+      code,
+    });
+
+    const tokenReq = https.request({
+      hostname: 'github.com', port: 443,
+      path: '/login/oauth/access_token', method: 'POST',
+      headers: {
+        'Content-Type':   'application/json',
+        'Accept':         'application/json',
+        'User-Agent':     'universal-llm-proxy/2.0',
+        'Content-Length': Buffer.byteLength(exchangeBody),
+      },
+    }, tokenRes => {
+      let data = '';
+      tokenRes.on('data', d => data += d);
+      tokenRes.on('end', () => {
+        let tokenJson;
+        try { tokenJson = JSON.parse(data); } catch {
+          res.writeHead(302, { Location: '/providers?error=invalid-token-response' });
+          return res.end();
+        }
+        if (!tokenJson.access_token) {
+          res.writeHead(302, { Location: `/providers?error=${encodeURIComponent(tokenJson.error_description || 'no-token')}` });
+          return res.end();
+        }
+
+        // Fetch GitHub username to display
+        const userReq = https.request({
+          hostname: 'api.github.com', port: 443, path: '/user', method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${tokenJson.access_token}`,
+            'User-Agent':    'universal-llm-proxy/2.0',
+            'Accept':        'application/vnd.github+json',
+          },
+        }, userRes => {
+          let ud = '';
+          userRes.on('data', d => ud += d);
+          userRes.on('end', () => {
+            let username = '';
+            try { username = JSON.parse(ud).login || ''; } catch {}
+
+            CFG.githubOAuthToken    = tokenJson.access_token;
+            CFG.githubOAuthUsername = username;
+            saveConfig(CFG);
+            _copilotToken     = tokenJson.access_token;
+            _copilotTokenTime = Date.now();
+            console.log(`[OAuth] GitHub connected as: ${username}`);
+            res.writeHead(302, { Location: `/providers?connected=github&user=${encodeURIComponent(username)}` });
+            res.end();
+          });
+        });
+        userReq.on('error', () => {
+          // Token saved even if username lookup fails
+          CFG.githubOAuthToken = tokenJson.access_token;
+          saveConfig(CFG);
+          _copilotToken     = tokenJson.access_token;
+          _copilotTokenTime = Date.now();
+          res.writeHead(302, { Location: '/providers?connected=github' });
+          res.end();
+        });
+        userReq.end();
+      });
+    });
+    tokenReq.on('error', err => {
+      res.writeHead(302, { Location: `/providers?error=${encodeURIComponent(err.message)}` });
+      res.end();
+    });
+    tokenReq.write(exchangeBody);
+    tokenReq.end();
+    return;
+  }
+
+  if (method === 'POST' && path === '/api/auth/github/disconnect') {
+    CFG.githubOAuthToken    = '';
+    CFG.githubOAuthUsername = '';
+    saveConfig(CFG);
+    _copilotToken     = null;
+    _copilotTokenTime = 0;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (method === 'POST' && path.startsWith('/api/providers/') && path.endsWith('/connect')) {
+    const providerId = path.split('/')[3]; // e.g. 'gemini', 'openai', 'groq'
+    let body = '';
+    req.on('data', d => body += d);
+    req.on('end', () => {
+      let payload;
+      try { payload = JSON.parse(body); } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        return res.end(JSON.stringify({ ok: false, message: 'Invalid JSON' }));
+      }
+      const key = (payload.apiKey || '').trim();
+      if (!key) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        return res.end(JSON.stringify({ ok: false, message: 'apiKey is required' }));
+      }
+      const fieldMap = {
+        gemini:      'geminiApiKey',
+        openai:      'openaiApiKey',
+        groq:        'groqApiKey',
+        nvidia:      'nvidiaApiKey',
+        openrouter:  'openrouterApiKey',
+      };
+      const field = fieldMap[providerId];
+      if (!field) {
+        res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        return res.end(JSON.stringify({ ok: false, message: `Unknown provider: ${providerId}` }));
+      }
+      CFG[field] = key;
+      saveConfig(CFG);
+      rebuildSets();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ ok: true, provider: providerId }));
+    });
+    return;
+  }
+
+  if (method === 'POST' && path.startsWith('/api/providers/') && path.endsWith('/disconnect')) {
+    const providerId = path.split('/')[3];
+    const fieldMap = {
+      gemini:     'geminiApiKey',
+      openai:     'openaiApiKey',
+      groq:       'groqApiKey',
+      nvidia:     'nvidiaApiKey',
+      openrouter: 'openrouterApiKey',
+    };
+    const field = fieldMap[providerId];
+    if (!field) {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      return res.end(JSON.stringify({ ok: false, message: `Unknown provider: ${providerId}` }));
+    }
+    CFG[field] = '';
+    saveConfig(CFG);
+    rebuildSets();
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (method === 'GET' && path === '/api/providers') {
+    const copilotToken = getCopilotToken();
+    const ollamaOk = (() => {
+      try {
+        require('child_process').execSync(`curl -s --max-time 1 http://127.0.0.1:${OLLAMA_PORT}/api/tags`, { stdio: 'pipe' });
+        return true;
+      } catch { return false; }
+    })();
+
+    const providers = [
+      {
+        id: 'github-copilot', name: 'GitHub Copilot', authType: 'oauth',
+        connected: !!copilotToken,
+        username:  CFG.githubOAuthUsername || (copilotToken ? 'via gh CLI' : ''),
+        modelCount: COPILOT_MODELS.length,
+        requestCount: REQUEST_COUNTS['github-copilot'] || 0,
+        connectUrl: '/api/auth/github/start',
+        needsClientId: !CFG.githubOAuthClientId,
+      },
+      {
+        id: 'gemini', name: 'Google Gemini', authType: 'api-key',
+        connected: !!GEMINI_API_KEY,
+        modelCount: GEMINI_API_KEY ? (CFG.geminiModels || DEFAULT_CONFIG.geminiModels).length : 0,
+        requestCount: REQUEST_COUNTS['gemini'] || 0,
+        keyHint: GEMINI_API_KEY ? `•••${GEMINI_API_KEY.slice(-4)}` : '',
+        getKeyUrl: 'https://aistudio.google.com/apikey',
+      },
+      {
+        id: 'openai', name: 'OpenAI / Codex', authType: 'api-key',
+        connected: !!OPENAI_API_KEY,
+        modelCount: OPENAI_API_KEY ? (CFG.openaiModels || DEFAULT_CONFIG.openaiModels).length : 0,
+        requestCount: REQUEST_COUNTS['openai'] || 0,
+        keyHint: OPENAI_API_KEY ? `•••${OPENAI_API_KEY.slice(-4)}` : '',
+        getKeyUrl: 'https://platform.openai.com/api-keys',
+      },
+      {
+        id: 'groq', name: 'Groq', authType: 'api-key',
+        connected: !!GROQ_API_KEY,
+        modelCount: GROQ_API_KEY ? GROQ_MODELS.size : 0,
+        requestCount: REQUEST_COUNTS['groq'] || 0,
+        keyHint: GROQ_API_KEY ? `•••${GROQ_API_KEY.slice(-4)}` : '',
+        getKeyUrl: 'https://console.groq.com/keys',
+      },
+      {
+        id: 'nvidia', name: 'NVIDIA NIM', authType: 'api-key',
+        connected: !!NVIDIA_API_KEY,
+        modelCount: NVIDIA_API_KEY ? NVIDIA_MODELS.size : 0,
+        requestCount: REQUEST_COUNTS['nvidia'] || 0,
+        keyHint: NVIDIA_API_KEY ? `•••${NVIDIA_API_KEY.slice(-4)}` : '',
+        getKeyUrl: 'https://build.nvidia.com',
+      },
+      {
+        id: 'openrouter', name: 'OpenRouter', authType: 'api-key',
+        connected: !!OPENROUTER_API_KEY,
+        modelCount: OPENROUTER_API_KEY ? OPENROUTER_MODELS.size : 0,
+        requestCount: REQUEST_COUNTS['openrouter'] || 0,
+        keyHint: OPENROUTER_API_KEY ? `•••${OPENROUTER_API_KEY.slice(-4)}` : '',
+        getKeyUrl: 'https://openrouter.ai/keys',
+      },
+      {
+        id: 'ollama', name: 'Ollama', authType: 'none',
+        connected: ollamaOk,
+        modelCount: 0,
+        requestCount: REQUEST_COUNTS['ollama'] || 0,
+        note: ollamaOk ? `Running on :${OLLAMA_PORT}` : `Not running — start with: ollama serve`,
+      },
+      {
+        id: 'opencode', name: 'OpenCode (free)', authType: 'none',
+        connected: true,
+        modelCount: ZEN_FREE_MODELS.size,
+        requestCount: REQUEST_COUNTS['opencode'] || 0,
+        note: 'Free tier — always available',
+      },
+    ];
+
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify({ providers }));
+  }
+
   // Models list — merge Go plan + free Zen models
   if (method === 'GET' && path === '/v1/models') {
     // Known context windows for OpenCode models (used to populate ctx% in Claude Code)
