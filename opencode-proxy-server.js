@@ -872,6 +872,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="nav-item" onclick="show('models',this)">🤖 Models</div>
     <div class="nav-item" onclick="show('ratelimits',this)">📈 Rate Limits</div>
     <div class="nav-item" onclick="show('copilot',this)">🐙 GitHub Copilot</div>
+    <div class="nav-item" onclick="window.location='/providers'">🔌 Providers</div>
   </div>
   <div class="main">
     <div id="sec-dashboard">
@@ -1089,6 +1090,278 @@ function maskKey(k) {
   return k.slice(0, 8) + '•'.repeat(Math.min(16, k.length - 8));
 }
 
+// ─── Providers page HTML ─────────────────────────────────────────────────────
+
+const PROVIDERS_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Providers — LLM Proxy</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;color:#eee;min-height:100vh}
+nav{background:#1a1a1a;border-bottom:1px solid #333;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}
+nav a{color:#aaa;text-decoration:none;font-size:0.9em;padding:4px 0}
+nav a:hover,nav a.active{color:#fff}
+nav .brand{color:#fff;font-weight:600;margin-right:12px}
+h1{font-size:1.5em;font-weight:600;padding:28px 28px 0}
+.subtitle{color:#888;font-size:0.9em;padding:6px 28px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:24px 28px}
+.card{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:20px;transition:border-color .2s}
+.card.connected{border-color:rgba(76,175,80,.4)}
+.card.disconnected{border-color:#333}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.card-title{font-size:1.05em;font-weight:600}
+.badge{font-size:0.75em;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge.ok{background:rgba(76,175,80,.15);color:#4caf50;border:1px solid rgba(76,175,80,.3)}
+.badge.warn{background:rgba(255,152,0,.12);color:#ff9800;border:1px solid rgba(255,152,0,.3)}
+.meta{font-size:0.82em;color:#888;margin-bottom:14px;line-height:1.6}
+.meta span{display:inline-block;margin-right:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{padding:6px 14px;border:none;border-radius:6px;font-size:0.85em;cursor:pointer;transition:opacity .15s}
+button:hover{opacity:.85}
+.btn-connect{background:#2196f3;color:#fff}
+.btn-oauth{background:#238636;color:#fff}
+.btn-disconnect{background:#c0392b;color:#fff}
+.btn-update{background:#444;color:#eee}
+.btn-info{background:#333;color:#aaa;cursor:default}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#1e1e1e;border:1px solid #444;border-radius:12px;padding:28px;width:min(440px,90vw)}
+.modal h3{margin-bottom:8px;font-size:1.1em}
+.modal p{color:#888;font-size:0.88em;margin-bottom:18px;line-height:1.5}
+.modal input{width:100%;padding:10px 12px;background:#111;border:1px solid #444;border-radius:6px;color:#eee;font-size:0.9em;margin-bottom:12px;outline:none}
+.modal input:focus{border-color:#2196f3}
+.modal-link{font-size:0.82em;color:#2196f3;text-decoration:none}
+.modal-link:hover{text-decoration:underline}
+.modal-actions{display:flex;gap:10px;margin-top:4px}
+.modal-actions button{flex:1}
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#eee;padding:12px 20px;border-radius:8px;font-size:0.88em;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1}
+.setup-banner{margin:16px 28px 0;padding:14px 18px;background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.25);border-radius:8px;font-size:0.88em;color:#ddd;line-height:1.6}
+.setup-banner code{background:#333;padding:1px 5px;border-radius:3px;font-size:0.9em}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">🔀 LLM Proxy</span>
+  <a href="/">Dashboard</a>
+  <a href="/providers" class="active">Providers</a>
+</nav>
+<h1>Provider Authentication</h1>
+<p class="subtitle">Connect your accounts and API keys. Models only appear when a provider is connected.</p>
+<div id="setup-banner" style="display:none" class="setup-banner"></div>
+<div class="grid" id="grid">Loading providers...</div>
+
+<!-- API Key Modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3 id="modal-title">Connect Provider</h3>
+    <p id="modal-desc"></p>
+    <a id="modal-link" href="#" target="_blank" class="modal-link">→ Get API key</a>
+    <input id="modal-key" type="password" placeholder="Paste your API key here">
+    <div class="modal-actions">
+      <button class="btn-update" onclick="closeModal()">Cancel</button>
+      <button class="btn-connect" onclick="submitKey()">Save & Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub OAuth Client ID Modal -->
+<div class="modal-bg" id="gh-setup-bg">
+  <div class="modal">
+    <h3>GitHub OAuth App Setup</h3>
+    <p>Register a GitHub OAuth App to enable direct GitHub authentication.
+       Set the callback URL to <code style="background:#333;padding:1px 5px;border-radius:3px">http://localhost:4001/api/auth/github/callback</code></p>
+    <a href="https://github.com/settings/developers" target="_blank" class="modal-link">→ Open GitHub Developer Settings</a><br><br>
+    <input id="gh-client-id" type="text" placeholder="Client ID (e.g. Ov23liXXXXXXXXXXX)">
+    <input id="gh-client-secret" type="password" placeholder="Client Secret">
+    <div class="modal-actions">
+      <button class="btn-update" onclick="closeGhSetup()">Cancel</button>
+      <button class="btn-oauth" onclick="saveGhSetup()">Save & Continue to GitHub</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let providers = [];
+let currentProvider = null;
+
+async function load() {
+  const r = await fetch('/api/providers').catch(() => null);
+  if (!r || !r.ok) { document.getElementById('grid').textContent = '⚠️ Proxy unreachable'; return; }
+  const data = await r.json();
+  providers = data.providers;
+
+  // Check URL params for feedback
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('connected') === 'github') toast('✅ GitHub connected as ' + (qs.get('user') || 'your account'), false);
+  if (qs.get('error')) toast('❌ Error: ' + decodeURIComponent(qs.get('error')), true);
+  history.replaceState({}, '', '/providers');
+
+  render();
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const ghProvider = providers.find(p => p.id === 'github-copilot');
+  const banner = document.getElementById('setup-banner');
+  if (ghProvider && ghProvider.needsClientId) {
+    banner.style.display = 'block';
+    banner.innerHTML = '⚙️ <strong>One-time setup required for GitHub Copilot:</strong> Register a GitHub OAuth App to enable browser-based login. ' +
+      '<button class="btn-oauth" style="margin-left:10px;padding:4px 12px" onclick="openGhSetup()">Set Up OAuth App</button>';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  for (const p of providers) {
+    const card = document.createElement('div');
+    card.className = 'card ' + (p.connected ? 'connected' : 'disconnected');
+
+    const icon = {
+      'github-copilot': '🐙', gemini: '🤖', openai: '🧠',
+      groq: '⚡', nvidia: '🟢', openrouter: '🔀', ollama: '🦙', opencode: '☁️'
+    }[p.id] || '🔌';
+
+    const statusBadge = p.connected
+      ? \`<span class="badge ok">✅ \${p.username || (p.authType === 'none' ? 'active' : 'API key ••••' + (p.keyHint || '').slice(-4))}</span>\`
+      : \`<span class="badge warn">⚠️ Not connected</span>\`;
+
+    let actions = '';
+    if (p.authType === 'oauth') {
+      if (p.connected) {
+        actions = \`<button class="btn-disconnect" onclick="disconnectGitHub()">Disconnect</button>
+                   <button class="btn-update" onclick="window.location='/api/auth/github/start'">Re-authenticate</button>\`;
+      } else if (p.needsClientId) {
+        actions = \`<button class="btn-oauth" onclick="openGhSetup()">🔐 Set Up & Connect GitHub</button>\`;
+      } else {
+        actions = \`<button class="btn-oauth" onclick="window.location='/api/auth/github/start'">🔐 Connect with GitHub</button>\`;
+      }
+    } else if (p.authType === 'api-key') {
+      if (p.connected) {
+        actions = \`<button class="btn-disconnect" onclick="disconnectProvider('\${p.id}')">Disconnect</button>
+                   <button class="btn-update" onclick="openModal('\${p.id}')">Update Key</button>\`;
+      } else {
+        actions = \`<button class="btn-connect" onclick="openModal('\${p.id}')">+ Connect</button>\`;
+      }
+    } else {
+      actions = p.connected
+        ? \`<button class="btn-info" disabled>Auto-detected</button>\`
+        : \`<span style="font-size:0.82em;color:#888">\${p.note || ''}</span>\`;
+    }
+
+    card.innerHTML = \`
+      <div class="card-header">
+        <div class="card-title">\${icon} \${p.name}</div>
+        \${statusBadge}
+      </div>
+      <div class="meta">
+        \${p.modelCount ? \`<span>\${p.modelCount} models</span>\` : ''}
+        <span>\${p.requestCount} requests</span>
+        \${p.note && p.authType === 'none' ? \`<span>\${p.note}</span>\` : ''}
+      </div>
+      <div class="actions">\${actions}</div>
+    \`;
+    grid.appendChild(card);
+  }
+}
+
+function openModal(id) {
+  currentProvider = providers.find(p => p.id === id);
+  if (!currentProvider) return;
+  document.getElementById('modal-title').textContent = (currentProvider.connected ? 'Update' : 'Connect') + ' ' + currentProvider.name;
+  document.getElementById('modal-desc').textContent = 'Paste your API key below. It will be stored in the proxy config on your machine only.';
+  const link = document.getElementById('modal-link');
+  link.href = currentProvider.getKeyUrl || '#';
+  link.textContent = '→ Get your ' + currentProvider.name + ' API key';
+  document.getElementById('modal-key').value = '';
+  document.getElementById('modal-bg').classList.add('open');
+  setTimeout(() => document.getElementById('modal-key').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('open');
+  currentProvider = null;
+}
+
+async function submitKey() {
+  const key = document.getElementById('modal-key').value.trim();
+  if (!key) { toast('Please enter an API key', true); return; }
+  const r = await fetch(\`/api/providers/\${currentProvider.id}/connect\`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: key }),
+  });
+  const j = await r.json();
+  if (j.ok) { closeModal(); toast('✅ ' + currentProvider.name + ' connected'); await load(); }
+  else { toast('❌ ' + (j.message || 'Error saving key'), true); }
+}
+
+async function disconnectProvider(id) {
+  if (!confirm('Disconnect this provider? API key will be removed from config.')) return;
+  const r = await fetch(\`/api/providers/\${id}/disconnect\`, { method: 'POST' });
+  const j = await r.json();
+  if (j.ok) { toast('Provider disconnected'); await load(); }
+  else { toast('❌ ' + (j.message || 'Error'), true); }
+}
+
+async function disconnectGitHub() {
+  if (!confirm('Disconnect GitHub? The stored OAuth token will be removed.')) return;
+  const r = await fetch('/api/auth/github/disconnect', { method: 'POST' });
+  const j = await r.json();
+  if (j.ok) { toast('GitHub disconnected'); await load(); }
+  else { toast('❌ ' + (j.message || 'Error'), true); }
+}
+
+function openGhSetup() {
+  document.getElementById('gh-client-id').value = '';
+  document.getElementById('gh-client-secret').value = '';
+  document.getElementById('gh-setup-bg').classList.add('open');
+  setTimeout(() => document.getElementById('gh-client-id').focus(), 50);
+}
+
+function closeGhSetup() {
+  document.getElementById('gh-setup-bg').classList.remove('open');
+}
+
+async function saveGhSetup() {
+  const clientId     = document.getElementById('gh-client-id').value.trim();
+  const clientSecret = document.getElementById('gh-client-secret').value.trim();
+  if (!clientId || !clientSecret) { toast('Both Client ID and Secret are required', true); return; }
+  const r = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ githubOAuthClientId: clientId, githubOAuthClientSecret: clientSecret }),
+  });
+  const j = await r.json();
+  if (j.ok) {
+    closeGhSetup();
+    toast('OAuth App saved — redirecting to GitHub...');
+    setTimeout(() => { window.location = '/api/auth/github/start'; }, 1200);
+  } else {
+    toast('❌ ' + (j.message || 'Save failed'), true);
+  }
+}
+
+function toast(msg, err = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#c0392b' : '#27ae60';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+load();
+setInterval(load, 30000); // refresh every 30s
+</script>
+</body>
+</html>`;
+
 // ─── HTTP server ─────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
@@ -1104,6 +1377,12 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, anthropic-version, anthropic-beta');
   if (method === 'OPTIONS') { res.writeHead(200); return res.end(); }
+
+  // Providers UI
+  if (method === 'GET' && path === '/providers') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    return res.end(PROVIDERS_HTML);
+  }
 
   // Dashboard UI
   if (method === 'GET' && path === '/') {
@@ -1162,6 +1441,10 @@ const server = http.createServer((req, res) => {
         if (update.groqApiKey       && typeof update.groqApiKey       === 'string' && !update.groqApiKey.includes('•'))       CFG.groqApiKey       = update.groqApiKey;
         if (update.nvidiaApiKey     && typeof update.nvidiaApiKey     === 'string' && !update.nvidiaApiKey.includes('•'))     CFG.nvidiaApiKey     = update.nvidiaApiKey;
         if (update.openrouterApiKey && typeof update.openrouterApiKey === 'string' && !update.openrouterApiKey.includes('•')) CFG.openrouterApiKey = update.openrouterApiKey;
+        if (typeof update.geminiApiKey  === 'string') CFG.geminiApiKey  = update.geminiApiKey;
+        if (typeof update.openaiApiKey  === 'string') CFG.openaiApiKey  = update.openaiApiKey;
+        if (typeof update.githubOAuthClientId     === 'string') CFG.githubOAuthClientId     = update.githubOAuthClientId;
+        if (typeof update.githubOAuthClientSecret === 'string') CFG.githubOAuthClientSecret = update.githubOAuthClientSecret;
         if (Array.isArray(update.groqModels))       CFG.groqModels       = update.groqModels;
         if (Array.isArray(update.nvidiaModels))     CFG.nvidiaModels     = update.nvidiaModels;
         if (Array.isArray(update.openrouterModels)) CFG.openrouterModels = update.openrouterModels;
