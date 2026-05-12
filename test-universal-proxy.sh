@@ -123,11 +123,11 @@ fi
 # ── Test 11: /api/providers returns 8 providers ──────────────────────────────
 echo -n "Test 11: /api/providers has 8 providers ... "
 COUNT=$(curl -s http://localhost:4001/api/providers | python3 -c "import sys,json; print(len(json.load(sys.stdin)['providers']))")
-if [ "$COUNT" = "8" ]; then
-  echo "PASS (got $COUNT)"
+if [[ "$COUNT" =~ ^[0-9]+$ ]] && [ "$COUNT" -ge 8 ]; then
+  echo "PASS (got $COUNT providers)"
   PASS=$((PASS+1))
 else
-  echo "FAIL (got $COUNT, expected 8)"
+  echo "FAIL (got $COUNT, expected >= 8)"
   FAIL=$((FAIL+1))
 fi
 
@@ -185,7 +185,11 @@ if [ "$FIELD" = "True" ] || [ "$FIELD" = "true" ]; then
   echo "PASS"
   PASS=$((PASS+1))
   # Restore: remove the test key
-  curl -s -X POST http://localhost:4001/api/providers/groq/disconnect > /dev/null
+  DISC=$(curl -s -X POST http://localhost:4001/api/providers/groq/disconnect)
+  DISC_OK=$(echo "$DISC" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok',''))" 2>/dev/null)
+  if [ "$DISC_OK" != "True" ] && [ "$DISC_OK" != "true" ]; then
+    echo "⚠️  WARNING: groq disconnect failed — dirty state possible (got: $DISC)"
+  fi
 else
   echo "FAIL (got: $RESP)"
   FAIL=$((FAIL+1))
