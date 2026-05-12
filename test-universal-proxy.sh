@@ -181,15 +181,15 @@ RESP=$(curl -s -X POST http://localhost:4001/api/providers/groq/connect \
   -H "Content-Type: application/json" \
   -d '{"apiKey":"test-key-do-not-use"}')
 FIELD=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok','missing'))" 2>/dev/null)
+# Always clean up the test key to avoid dirty state
+DISC=$(curl -s -X POST http://localhost:4001/api/providers/groq/disconnect)
+DISC_OK=$(echo "$DISC" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok',''))" 2>/dev/null)
+if [ "$DISC_OK" != "True" ] && [ "$DISC_OK" != "true" ]; then
+  echo "⚠️  WARNING: groq disconnect failed — dirty state possible (got: $DISC)"
+fi
 if [ "$FIELD" = "True" ] || [ "$FIELD" = "true" ]; then
   echo "PASS"
   PASS=$((PASS+1))
-  # Restore: remove the test key
-  DISC=$(curl -s -X POST http://localhost:4001/api/providers/groq/disconnect)
-  DISC_OK=$(echo "$DISC" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok',''))" 2>/dev/null)
-  if [ "$DISC_OK" != "True" ] && [ "$DISC_OK" != "true" ]; then
-    echo "⚠️  WARNING: groq disconnect failed — dirty state possible (got: $DISC)"
-  fi
 else
   echo "FAIL (got: $RESP)"
   FAIL=$((FAIL+1))

@@ -1378,9 +1378,9 @@ const server = http.createServer((req, res) => {
   req.socket.setTimeout(0); // no server-side socket timeout
   const method = req.method;
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  const path = url.pathname;
+  const reqPath = url.pathname;
 
-  console.log(`[${new Date().toISOString()}] ${method} ${path}`);
+  console.log(`[${new Date().toISOString()}] ${method} ${reqPath}`);
 
   // CORS + preflight
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1389,25 +1389,25 @@ const server = http.createServer((req, res) => {
   if (method === 'OPTIONS') { res.writeHead(200); return res.end(); }
 
   // Providers UI
-  if (method === 'GET' && path === '/providers') {
+  if (method === 'GET' && reqPath === '/providers') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(PROVIDERS_HTML);
   }
 
   // Dashboard UI
-  if (method === 'GET' && path === '/') {
+  if (method === 'GET' && reqPath === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(DASHBOARD_HTML);
   }
 
   // Health / connectivity checks
-  if (method === 'HEAD' || (method === 'GET' && path === '/health')) {
+  if (method === 'HEAD' || (method === 'GET' && reqPath === '/health')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ status: 'ok', proxy: 'opencode-zen' }));
   }
 
   // Dashboard API — current config (keys masked)
-  if (method === 'GET' && path === '/api/config') {
+  if (method === 'GET' && reqPath === '/api/config') {
     const safe = {
       apiKeyGo:        maskKey(CFG.apiKeyGo),
       apiKeyFree:      maskKey(CFG.apiKeyFree),
@@ -1427,7 +1427,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Dashboard API — save + hot-reload config
-  if (method === 'POST' && path === '/api/config') {
+  if (method === 'POST' && reqPath === '/api/config') {
     const MAX_BODY = 64 * 1024; // 64 KB — config JSON will never be larger
     let body = '';
     req.on('data', d => {
@@ -1484,7 +1484,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Dashboard API — live log stream (SSE)
-  if (method === 'GET' && path === '/api/logs') {
+  if (method === 'GET' && reqPath === '/api/logs') {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -1503,14 +1503,14 @@ const server = http.createServer((req, res) => {
   }
 
   // Active model override status
-  if (method === 'GET' && path === '/api/active-model') {
+  if (method === 'GET' && reqPath === '/api/active-model') {
     const activeModel = readActiveModel();
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify({ model: activeModel }));
   }
 
   // ── GitHub Copilot auth endpoints ─────────────────────────────────────────
-  if (method === 'GET' && path === '/api/copilot/test') {
+  if (method === 'GET' && reqPath === '/api/copilot/test') {
     const token = getCopilotToken(true);
     if (!token) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1548,7 +1548,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (method === 'POST' && path === '/api/copilot/login') {
+  if (method === 'POST' && reqPath === '/api/copilot/login') {
     try {
       const { spawn } = require('child_process');
       spawn('gh', ['auth', 'login', '--hostname', 'github.com', '--web'], {
@@ -1565,7 +1565,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (method === 'POST' && path === '/api/copilot/logout') {
+  if (method === 'POST' && reqPath === '/api/copilot/logout') {
     try {
       require('child_process').execSync('gh auth logout --hostname github.com -y', { encoding: 'utf8', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` } });
       _copilotToken     = null;
@@ -1580,7 +1580,7 @@ const server = http.createServer((req, res) => {
   }
 
   // ── GitHub OAuth App flow ─────────────────────────────────────────────────
-  if (method === 'GET' && path === '/api/auth/github/start') {
+  if (method === 'GET' && reqPath === '/api/auth/github/start') {
     if (!CFG.githubOAuthClientId) {
       res.writeHead(302, { Location: '/providers?error=missing-client-id' });
       return res.end();
@@ -1591,7 +1591,7 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  if (method === 'GET' && path.startsWith('/api/auth/github/callback')) {
+  if (method === 'GET' && reqPath.startsWith('/api/auth/github/callback')) {
     const qs = url.searchParams;
     const code  = qs.get('code')  || '';
     const state = qs.get('state') || '';
@@ -1683,7 +1683,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (method === 'POST' && path === '/api/auth/github/disconnect') {
+  if (method === 'POST' && reqPath === '/api/auth/github/disconnect') {
     CFG.githubOAuthToken    = '';
     CFG.githubOAuthUsername = '';
     saveConfig(CFG);
@@ -1693,18 +1693,21 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ ok: true }));
   }
 
-  if (method === 'POST' && path.startsWith('/api/providers/') && path.endsWith('/connect')) {
-    const providerId = path.split('/')[3]; // e.g. 'gemini', 'openai', 'groq'
+  if (method === 'POST' && reqPath.startsWith('/api/providers/') && reqPath.endsWith('/connect')) {
+    const providerId = reqPath.split('/')[3]; // e.g. 'gemini', 'openai', 'groq'
     let body = '';
     const MAX_BODY = 1024;
     req.on('data', d => {
       body += d;
       if (body.length > MAX_BODY) {
         req.destroy();
-        res.writeHead(413, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-        res.end(JSON.stringify({ ok: false, message: 'Request body too large' }));
+        if (!res.headersSent) {
+          res.writeHead(413, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ ok: false, message: 'Request body too large' }));
+        }
       }
     });
+    req.on('error', () => { /* swallow: req.destroy() above already sent 413 */ });
     req.on('end', () => {
       let payload;
       try { payload = JSON.parse(body); } catch {
@@ -1737,8 +1740,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (method === 'POST' && path.startsWith('/api/providers/') && path.endsWith('/disconnect')) {
-    const providerId = path.split('/')[3];
+  if (method === 'POST' && reqPath.startsWith('/api/providers/') && reqPath.endsWith('/disconnect')) {
+    const providerId = reqPath.split('/')[3];
     const fieldMap = {
       gemini:     'geminiApiKey',
       openai:     'openaiApiKey',
@@ -1758,7 +1761,7 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({ ok: true }));
   }
 
-  if (method === 'GET' && path === '/api/providers') {
+  if (method === 'GET' && reqPath === '/api/providers') {
     // Async Ollama check — does NOT block event loop
     const checkOllama = () => new Promise(resolve => {
       const req = http.request(
@@ -1844,7 +1847,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Models list — merge Go plan + free Zen models
-  if (method === 'GET' && path === '/v1/models') {
+  if (method === 'GET' && reqPath === '/v1/models') {
     // Known context windows for OpenCode models (used to populate ctx% in Claude Code)
     const MODEL_CTX = {
       'glm-5': 128000, 'glm-5.1': 128000, 'glm-5-free': 128000,
@@ -1924,7 +1927,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Messages — Anthropic → OpenAI conversion
-  if (method === 'POST' && path === '/v1/messages') {
+  if (method === 'POST' && reqPath === '/v1/messages') {
     const MAX_BODY = 10 * 1024 * 1024; // 10 MB
     let rawBody = '';
     let bodyTooLarge = false;
@@ -1986,6 +1989,10 @@ const server = http.createServer((req, res) => {
         if (providerInfo.name === 'GitHub Copilot' && !providerInfo.apiKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: "GitHub Copilot: not logged in. Run 'gh auth login' in terminal or use the proxy dashboard." }));
+        }
+        if ((providerInfo.name === 'Google Gemini' || providerInfo.name === 'OpenAI') && !providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: { message: `${providerInfo.name}: API key not configured. Visit http://localhost:4001/providers to connect.`, type: 'authentication_error' } }));
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
@@ -2058,7 +2065,7 @@ const server = http.createServer((req, res) => {
 
   // Fallback 404
   res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not found', path }));
+  res.end(JSON.stringify({ error: 'Not found', reqPath }));
 });
 
 server.listen(PORT, '127.0.0.1', () => {
