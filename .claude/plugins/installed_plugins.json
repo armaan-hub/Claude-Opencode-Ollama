@@ -1,97 +1,88 @@
 {
-    "version": 2,
-    "plugins": {
-        "claude-mem@thedotmack": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/thedotmack/claude-mem/13.1.0",
-                "version": "13.1.0",
-                "installedAt": "2026-05-02T05:15:27.532Z",
-                "lastUpdated": "2026-05-11T07:32:48.374Z"
-            }
-        ],
-        "superpowers@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0",
-                "version": "5.1.0",
-                "installedAt": "2026-05-02T05:19:01.046Z",
-                "lastUpdated": "2026-05-10T14:26:39.019Z",
-                "gitCommitSha": "e7a2d16476bf042e9add4699c9d018a90f86e4a6"
-            }
-        ],
-        "frontend-design@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/frontend-design/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-02T05:19:32.899Z",
-                "lastUpdated": "2026-05-10T14:24:42.821Z"
-            }
-        ],
-        "code-simplifier@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/code-simplifier/1.0.0",
-                "version": "1.0.0",
-                "installedAt": "2026-05-02T05:19:46.657Z",
-                "lastUpdated": "2026-05-02T05:19:46.657Z"
-            }
-        ],
-        "skill-creator@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/skill-creator/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-02T05:19:59.673Z",
-                "lastUpdated": "2026-05-10T14:24:42.826Z"
-            }
-        ],
-        "code-review@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/code-review/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-02T05:20:19.572Z",
-                "lastUpdated": "2026-05-10T14:24:42.821Z"
-            }
-        ],
-        "github@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/github/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-02T05:20:27.980Z",
-                "lastUpdated": "2026-05-10T14:24:42.819Z"
-            }
-        ],
-        "context7@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/context7/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-02T05:20:38.165Z",
-                "lastUpdated": "2026-05-10T14:24:42.819Z"
-            }
-        ],
-        "playwright@claude-plugins-official": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/playwright/043ebfe1ace0",
-                "version": "043ebfe1ace0",
-                "installedAt": "2026-05-08T21:54:54.714Z",
-                "lastUpdated": "2026-05-10T14:24:42.819Z",
-                "gitCommitSha": "1458f08844fae2d50b35634a4c92ba35bb4cede6"
-            }
-        ],
-        "universal-model-switcher@local": [
-            {
-                "scope": "user",
-                "installPath": "/Users/armaan/.claude/plugins/cache/local/universal-model-switcher/1.0.0",
-                "version": "1.0.0",
-                "installedAt": "2026-05-12T10:00:00.000Z",
-                "lastUpdated": "2026-05-12T10:00:00.000Z"
-            }
-        ]
-    }
+  "version": 2,
+  "plugins": {
+    "claude-mem@thedotmack": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/thedotmack/claude-mem/13.1.0",
+        "version": "13.1.0",
+        "installedAt": "2026-05-02T05:15:27.532Z",
+        "lastUpdated": "2026-05-11T07:32:48.374Z"
+      }
+    ],
+    "superpowers@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0",
+        "version": "5.1.0",
+        "installedAt": "2026-05-02T05:19:01.046Z",
+        "lastUpdated": "2026-05-10T14:26:39.019Z",
+        "gitCommitSha": "e7a2d16476bf042e9add4699c9d018a90f86e4a6"
+      }
+    ],
+    "frontend-design@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/frontend-design/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-02T05:19:32.899Z",
+        "lastUpdated": "2026-05-10T14:24:42.821Z"
+      }
+    ],
+    "code-simplifier@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/code-simplifier/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-05-02T05:19:46.657Z",
+        "lastUpdated": "2026-05-02T05:19:46.657Z"
+      }
+    ],
+    "skill-creator@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/skill-creator/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-02T05:19:59.673Z",
+        "lastUpdated": "2026-05-10T14:24:42.826Z"
+      }
+    ],
+    "code-review@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/code-review/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-02T05:20:19.572Z",
+        "lastUpdated": "2026-05-10T14:24:42.821Z"
+      }
+    ],
+    "github@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/github/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-02T05:20:27.980Z",
+        "lastUpdated": "2026-05-10T14:24:42.819Z"
+      }
+    ],
+    "context7@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/context7/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-02T05:20:38.165Z",
+        "lastUpdated": "2026-05-10T14:24:42.819Z"
+      }
+    ],
+    "playwright@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/armaan/.claude/plugins/cache/claude-plugins-official/playwright/043ebfe1ace0",
+        "version": "043ebfe1ace0",
+        "installedAt": "2026-05-08T21:54:54.714Z",
+        "lastUpdated": "2026-05-10T14:24:42.819Z",
+        "gitCommitSha": "1458f08844fae2d50b35634a4c92ba35bb4cede6"
+      }
+    ]
+  }
 }
