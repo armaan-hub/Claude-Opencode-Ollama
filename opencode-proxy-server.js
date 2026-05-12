@@ -1299,7 +1299,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (method === 'GET' && path.startsWith('/api/auth/github/callback')) {
-    const qs = new URL(`http://localhost${path}`).searchParams;
+    const qs = url.searchParams;
     const code  = qs.get('code')  || '';
     const state = qs.get('state') || '';
     if (!code || state !== _oauthState) {
