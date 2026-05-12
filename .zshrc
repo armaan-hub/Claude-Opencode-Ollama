@@ -222,7 +222,7 @@ run-claude-opencode() {
 
   if [[ "$model" == gemini/* ]]; then
     local gemini_key
-    gemini_key=$(curl -s --max-time 2 http://localhost:4001/api/providers 2>/dev/null \
+    gemini_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 http://localhost:4001/api/providers 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='gemini'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
     if [[ -z "$gemini_key" ]]; then
       echo ""
@@ -234,7 +234,7 @@ run-claude-opencode() {
 
   if [[ "$model" == openai/* ]]; then
     local openai_key
-    openai_key=$(curl -s --max-time 2 http://localhost:4001/api/providers 2>/dev/null \
+    openai_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 http://localhost:4001/api/providers 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='openai'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
     if [[ -z "$openai_key" ]]; then
       echo ""
