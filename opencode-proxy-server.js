@@ -1302,7 +1302,7 @@ const server = http.createServer((req, res) => {
     const qs = url.searchParams;
     const code  = qs.get('code')  || '';
     const state = qs.get('state') || '';
-    if (!code || state !== _oauthState) {
+    if (!code || !_oauthState || state !== _oauthState) {
       res.writeHead(302, { Location: '/providers?error=bad-state' });
       return res.end();
     }
@@ -1327,6 +1327,10 @@ const server = http.createServer((req, res) => {
       let data = '';
       tokenRes.on('data', d => data += d);
       tokenRes.on('end', () => {
+        if (tokenRes.statusCode !== 200) {
+          res.writeHead(302, { Location: `/providers?error=github-${tokenRes.statusCode}` });
+          return res.end();
+        }
         let tokenJson;
         try { tokenJson = JSON.parse(data); } catch {
           res.writeHead(302, { Location: '/providers?error=invalid-token-response' });
@@ -1350,7 +1354,9 @@ const server = http.createServer((req, res) => {
           userRes.on('data', d => ud += d);
           userRes.on('end', () => {
             let username = '';
-            try { username = JSON.parse(ud).login || ''; } catch {}
+            if (userRes.statusCode === 200) {
+              try { username = JSON.parse(ud).login || ''; } catch {}
+            }
 
             CFG.githubOAuthToken    = tokenJson.access_token;
             CFG.githubOAuthUsername = username;
@@ -1375,7 +1381,8 @@ const server = http.createServer((req, res) => {
       });
     });
     tokenReq.on('error', err => {
-      res.writeHead(302, { Location: `/providers?error=${encodeURIComponent(err.message)}` });
+      console.error('[OAuth] Token exchange network error:', err.message);
+      res.writeHead(302, { Location: '/providers?error=network-error' });
       res.end();
     });
     tokenReq.write(exchangeBody);
@@ -1396,7 +1403,15 @@ const server = http.createServer((req, res) => {
   if (method === 'POST' && path.startsWith('/api/providers/') && path.endsWith('/connect')) {
     const providerId = path.split('/')[3]; // e.g. 'gemini', 'openai', 'groq'
     let body = '';
-    req.on('data', d => body += d);
+    const MAX_BODY = 1024;
+    req.on('data', d => {
+      body += d;
+      if (body.length > MAX_BODY) {
+        req.destroy();
+        res.writeHead(413, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ ok: false, message: 'Request body too large' }));
+      }
+    });
     req.on('end', () => {
       let payload;
       try { payload = JSON.parse(body); } catch {
@@ -1451,82 +1466,88 @@ const server = http.createServer((req, res) => {
   }
 
   if (method === 'GET' && path === '/api/providers') {
-    const copilotToken = getCopilotToken();
-    const ollamaOk = (() => {
-      try {
-        require('child_process').execSync(`curl -s --max-time 1 http://127.0.0.1:${OLLAMA_PORT}/api/tags`, { stdio: 'pipe' });
-        return true;
-      } catch { return false; }
-    })();
+    // Async Ollama check — does NOT block event loop
+    const checkOllama = () => new Promise(resolve => {
+      const req = http.request(
+        { hostname: '127.0.0.1', port: OLLAMA_PORT, path: '/api/tags', method: 'GET' },
+        r => { r.resume(); resolve(r.statusCode < 500); }
+      );
+      req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+      req.on('error', () => resolve(false));
+      req.end();
+    });
 
-    const providers = [
-      {
-        id: 'github-copilot', name: 'GitHub Copilot', authType: 'oauth',
-        connected: !!copilotToken,
-        username:  CFG.githubOAuthUsername || (copilotToken ? 'via gh CLI' : ''),
-        modelCount: COPILOT_MODELS.length,
-        requestCount: REQUEST_COUNTS['github-copilot'] || 0,
-        connectUrl: '/api/auth/github/start',
-        needsClientId: !CFG.githubOAuthClientId,
-      },
-      {
-        id: 'gemini', name: 'Google Gemini', authType: 'api-key',
-        connected: !!GEMINI_API_KEY,
-        modelCount: GEMINI_API_KEY ? (CFG.geminiModels || DEFAULT_CONFIG.geminiModels).length : 0,
-        requestCount: REQUEST_COUNTS['gemini'] || 0,
-        keyHint: GEMINI_API_KEY ? `•••${GEMINI_API_KEY.slice(-4)}` : '',
-        getKeyUrl: 'https://aistudio.google.com/apikey',
-      },
-      {
-        id: 'openai', name: 'OpenAI / Codex', authType: 'api-key',
-        connected: !!OPENAI_API_KEY,
-        modelCount: OPENAI_API_KEY ? (CFG.openaiModels || DEFAULT_CONFIG.openaiModels).length : 0,
-        requestCount: REQUEST_COUNTS['openai'] || 0,
-        keyHint: OPENAI_API_KEY ? `•••${OPENAI_API_KEY.slice(-4)}` : '',
-        getKeyUrl: 'https://platform.openai.com/api-keys',
-      },
-      {
-        id: 'groq', name: 'Groq', authType: 'api-key',
-        connected: !!GROQ_API_KEY,
-        modelCount: GROQ_API_KEY ? GROQ_MODELS.size : 0,
-        requestCount: REQUEST_COUNTS['groq'] || 0,
-        keyHint: GROQ_API_KEY ? `•••${GROQ_API_KEY.slice(-4)}` : '',
-        getKeyUrl: 'https://console.groq.com/keys',
-      },
-      {
-        id: 'nvidia', name: 'NVIDIA NIM', authType: 'api-key',
-        connected: !!NVIDIA_API_KEY,
-        modelCount: NVIDIA_API_KEY ? NVIDIA_MODELS.size : 0,
-        requestCount: REQUEST_COUNTS['nvidia'] || 0,
-        keyHint: NVIDIA_API_KEY ? `•••${NVIDIA_API_KEY.slice(-4)}` : '',
-        getKeyUrl: 'https://build.nvidia.com',
-      },
-      {
-        id: 'openrouter', name: 'OpenRouter', authType: 'api-key',
-        connected: !!OPENROUTER_API_KEY,
-        modelCount: OPENROUTER_API_KEY ? OPENROUTER_MODELS.size : 0,
-        requestCount: REQUEST_COUNTS['openrouter'] || 0,
-        keyHint: OPENROUTER_API_KEY ? `•••${OPENROUTER_API_KEY.slice(-4)}` : '',
-        getKeyUrl: 'https://openrouter.ai/keys',
-      },
-      {
-        id: 'ollama', name: 'Ollama', authType: 'none',
-        connected: ollamaOk,
-        modelCount: 0,
-        requestCount: REQUEST_COUNTS['ollama'] || 0,
-        note: ollamaOk ? `Running on :${OLLAMA_PORT}` : `Not running — start with: ollama serve`,
-      },
-      {
-        id: 'opencode', name: 'OpenCode (free)', authType: 'none',
-        connected: true,
-        modelCount: ZEN_FREE_MODELS.size,
-        requestCount: REQUEST_COUNTS['opencode'] || 0,
-        note: 'Free tier — always available',
-      },
-    ];
-
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-    return res.end(JSON.stringify({ providers }));
+    checkOllama().then(ollamaOk => {
+      const copilotToken = getCopilotToken();
+      const providers = [
+        {
+          id: 'github-copilot', name: 'GitHub Copilot', authType: 'oauth',
+          connected: !!copilotToken,
+          username:  CFG.githubOAuthUsername || (copilotToken ? 'via gh CLI' : ''),
+          modelCount: COPILOT_MODELS.length,
+          requestCount: REQUEST_COUNTS['github-copilot'] || 0,
+          connectUrl: '/api/auth/github/start',
+          needsClientId: !CFG.githubOAuthClientId,
+        },
+        {
+          id: 'gemini', name: 'Google Gemini', authType: 'api-key',
+          connected: !!GEMINI_API_KEY,
+          modelCount: GEMINI_API_KEY ? (CFG.geminiModels || DEFAULT_CONFIG.geminiModels).length : 0,
+          requestCount: REQUEST_COUNTS['gemini'] || 0,
+          keyHint: GEMINI_API_KEY ? `•••${GEMINI_API_KEY.slice(-4)}` : '',
+          getKeyUrl: 'https://aistudio.google.com/apikey',
+        },
+        {
+          id: 'openai', name: 'OpenAI / Codex', authType: 'api-key',
+          connected: !!OPENAI_API_KEY,
+          modelCount: OPENAI_API_KEY ? (CFG.openaiModels || DEFAULT_CONFIG.openaiModels).length : 0,
+          requestCount: REQUEST_COUNTS['openai'] || 0,
+          keyHint: OPENAI_API_KEY ? `•••${OPENAI_API_KEY.slice(-4)}` : '',
+          getKeyUrl: 'https://platform.openai.com/api-keys',
+        },
+        {
+          id: 'groq', name: 'Groq', authType: 'api-key',
+          connected: !!GROQ_API_KEY,
+          modelCount: GROQ_API_KEY ? GROQ_MODELS.size : 0,
+          requestCount: REQUEST_COUNTS['groq'] || 0,
+          keyHint: GROQ_API_KEY ? `•••${GROQ_API_KEY.slice(-4)}` : '',
+          getKeyUrl: 'https://console.groq.com/keys',
+        },
+        {
+          id: 'nvidia', name: 'NVIDIA NIM', authType: 'api-key',
+          connected: !!NVIDIA_API_KEY,
+          modelCount: NVIDIA_API_KEY ? NVIDIA_MODELS.size : 0,
+          requestCount: REQUEST_COUNTS['nvidia'] || 0,
+          keyHint: NVIDIA_API_KEY ? `•••${NVIDIA_API_KEY.slice(-4)}` : '',
+          getKeyUrl: 'https://build.nvidia.com',
+        },
+        {
+          id: 'openrouter', name: 'OpenRouter', authType: 'api-key',
+          connected: !!OPENROUTER_API_KEY,
+          modelCount: OPENROUTER_API_KEY ? OPENROUTER_MODELS.size : 0,
+          requestCount: REQUEST_COUNTS['openrouter'] || 0,
+          keyHint: OPENROUTER_API_KEY ? `•••${OPENROUTER_API_KEY.slice(-4)}` : '',
+          getKeyUrl: 'https://openrouter.ai/keys',
+        },
+        {
+          id: 'ollama', name: 'Ollama', authType: 'none',
+          connected: ollamaOk,
+          modelCount: 0,
+          requestCount: REQUEST_COUNTS['ollama'] || 0,
+          note: ollamaOk ? `Running on :${OLLAMA_PORT}` : `Not running — start with: ollama serve`,
+        },
+        {
+          id: 'opencode', name: 'OpenCode (free)', authType: 'none',
+          connected: true,
+          modelCount: ZEN_FREE_MODELS.size,
+          requestCount: REQUEST_COUNTS['opencode'] || 0,
+          note: 'Free tier — always available',
+        },
+      ];
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ providers }));
+    });
+    return;
   }
 
   // Models list — merge Go plan + free Zen models
