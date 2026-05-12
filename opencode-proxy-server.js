@@ -197,6 +197,7 @@ function rebuildSets() {
   OPENAI_API_KEY    = typeof CFG.openaiApiKey  === 'string' ? CFG.openaiApiKey  : DEFAULT_CONFIG.openaiApiKey;
 }
 
+// GEMINI_MODELS / OPENAI_MODELS: used for /v1/models listing. Routing uses startsWith() prefix matching.
 let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY;
 rebuildSets();
 
@@ -1342,18 +1343,12 @@ const server = http.createServer((req, res) => {
             owned_by:       'github-copilot',
             context_length: 128000,
           }));
-          const geminiModelsList = [];
-          if (GEMINI_API_KEY) {
-            for (const m of CFG.geminiModels || DEFAULT_CONFIG.geminiModels) {
-              geminiModelsList.push({ id: `gemini/${m}`, object: 'model', owned_by: 'google-gemini', created: 0 });
-            }
-          }
-          const openaiModelsList = [];
-          if (OPENAI_API_KEY) {
-            for (const m of CFG.openaiModels || DEFAULT_CONFIG.openaiModels) {
-              openaiModelsList.push({ id: `openai/${m}`, object: 'model', owned_by: 'openai', created: 0 });
-            }
-          }
+          const geminiModelsList = GEMINI_API_KEY
+            ? [...GEMINI_MODELS].map(id => ({ id: `gemini/${id}`, object: 'model', owned_by: 'google-gemini', created: 0, context_length: 131072 }))
+            : [];
+          const openaiModelsList = OPENAI_API_KEY
+            ? [...OPENAI_MODELS].map(id => ({ id: `openai/${id}`, object: 'model', owned_by: 'openai', created: 0, context_length: 131072 }))
+            : [];
           const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
