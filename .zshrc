@@ -190,6 +190,15 @@ run-claude-opencode() {
     "copilot/gpt-5-mini          → GPT-5 mini via GitHub Copilot (subscription)" \
     "copilot/gpt-4.1             → GPT-4.1 via GitHub Copilot (subscription)" \
     "copilot/grok-code-fast-1    → Grok Code Fast 1 via GitHub Copilot (subscription)" \
+    "──── Google Gemini ─────────────────────────────────────────────" \
+    "gemini/gemini-2.5-pro         → Gemini 2.5 Pro (requires API key)" \
+    "gemini/gemini-2.5-flash       → Gemini 2.5 Flash (requires API key)" \
+    "gemini/gemini-2.0-flash       → Gemini 2.0 Flash (requires API key)" \
+    "──── OpenAI / Codex ────────────────────────────────────────────" \
+    "openai/gpt-4o                 → GPT-4o (requires API key)" \
+    "openai/gpt-4o-mini            → GPT-4o mini (requires API key)" \
+    "openai/o4-mini                → o4-mini (requires API key)" \
+    "openai/codex-mini-latest      → Codex mini (requires API key)" \
     | grep -v "^──" \
     | fzf --prompt="🤖 Model > " --height=30 --border \
           --header="↑↓ navigate  Enter select  Esc cancel" \
@@ -209,6 +218,30 @@ run-claude-opencode() {
       return 1
     fi
     echo "🐙 GitHub Copilot: authenticated ✅ ($(gh auth whoami 2>/dev/null || echo 'logged in'))"
+  fi
+
+  if [[ "$model" == gemini/* ]]; then
+    local gemini_key
+    gemini_key=$(curl -s --max-time 2 http://localhost:4001/api/providers 2>/dev/null \
+      | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='gemini'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
+    if [[ -z "$gemini_key" ]]; then
+      echo ""
+      echo "⚠️  Google Gemini requires an API key."
+      echo "   Connect it at: http://localhost:4001/providers"
+      return 1
+    fi
+  fi
+
+  if [[ "$model" == openai/* ]]; then
+    local openai_key
+    openai_key=$(curl -s --max-time 2 http://localhost:4001/api/providers 2>/dev/null \
+      | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='openai'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
+    if [[ -z "$openai_key" ]]; then
+      echo ""
+      echo "⚠️  OpenAI requires an API key."
+      echo "   Connect it at: http://localhost:4001/providers"
+      return 1
+    fi
   fi
 
   # ── Step 3: launch ────────────────────────────────────────────
