@@ -1193,13 +1193,15 @@ let currentProvider = null;
 async function load() {
   const r = await fetch('/api/providers').catch(() => null);
   if (!r || !r.ok) { document.getElementById('grid').textContent = '⚠️ Proxy unreachable'; return; }
-  const data = await r.json();
+  let data;
+  try { data = await r.json(); }
+  catch { document.getElementById('grid').textContent = '⚠️ Invalid response from proxy'; return; }
   providers = data.providers;
 
   // Check URL params for feedback
   const qs = new URLSearchParams(location.search);
   if (qs.get('connected') === 'github') toast('✅ GitHub connected as ' + (qs.get('user') || 'your account'), false);
-  if (qs.get('error')) toast('❌ Error: ' + decodeURIComponent(qs.get('error')), true);
+  if (qs.get('error')) toast('❌ Error: ' + qs.get('error'), true);
   history.replaceState({}, '', '/providers');
 
   render();
@@ -1292,30 +1294,36 @@ function closeModal() {
 async function submitKey() {
   const key = document.getElementById('modal-key').value.trim();
   if (!key) { toast('Please enter an API key', true); return; }
-  const r = await fetch(\`/api/providers/\${currentProvider.id}/connect\`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey: key }),
-  });
-  const j = await r.json();
-  if (j.ok) { closeModal(); toast('✅ ' + currentProvider.name + ' connected'); await load(); }
-  else { toast('❌ ' + (j.message || 'Error saving key'), true); }
+  try {
+    const r = await fetch(\`/api/providers/\${currentProvider.id}/connect\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    const j = await r.json();
+    if (j.ok) { closeModal(); toast('✅ ' + currentProvider.name + ' connected'); await load(); }
+    else { toast('❌ ' + (j.message || 'Error saving key'), true); }
+  } catch { toast('❌ Network error — proxy unreachable', true); }
 }
 
 async function disconnectProvider(id) {
   if (!confirm('Disconnect this provider? API key will be removed from config.')) return;
-  const r = await fetch(\`/api/providers/\${id}/disconnect\`, { method: 'POST' });
-  const j = await r.json();
-  if (j.ok) { toast('Provider disconnected'); await load(); }
-  else { toast('❌ ' + (j.message || 'Error'), true); }
+  try {
+    const r = await fetch(\`/api/providers/\${id}/disconnect\`, { method: 'POST' });
+    const j = await r.json();
+    if (j.ok) { toast('Provider disconnected'); await load(); }
+    else { toast('❌ ' + (j.message || 'Error'), true); }
+  } catch { toast('❌ Network error — proxy unreachable', true); }
 }
 
 async function disconnectGitHub() {
   if (!confirm('Disconnect GitHub? The stored OAuth token will be removed.')) return;
-  const r = await fetch('/api/auth/github/disconnect', { method: 'POST' });
-  const j = await r.json();
-  if (j.ok) { toast('GitHub disconnected'); await load(); }
-  else { toast('❌ ' + (j.message || 'Error'), true); }
+  try {
+    const r = await fetch('/api/auth/github/disconnect', { method: 'POST' });
+    const j = await r.json();
+    if (j.ok) { toast('GitHub disconnected'); await load(); }
+    else { toast('❌ ' + (j.message || 'Error'), true); }
+  } catch { toast('❌ Network error — proxy unreachable', true); }
 }
 
 function openGhSetup() {
@@ -1333,19 +1341,21 @@ async function saveGhSetup() {
   const clientId     = document.getElementById('gh-client-id').value.trim();
   const clientSecret = document.getElementById('gh-client-secret').value.trim();
   if (!clientId || !clientSecret) { toast('Both Client ID and Secret are required', true); return; }
-  const r = await fetch('/api/config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ githubOAuthClientId: clientId, githubOAuthClientSecret: clientSecret }),
-  });
-  const j = await r.json();
-  if (j.ok) {
-    closeGhSetup();
-    toast('OAuth App saved — redirecting to GitHub...');
-    setTimeout(() => { window.location = '/api/auth/github/start'; }, 1200);
-  } else {
-    toast('❌ ' + (j.message || 'Save failed'), true);
-  }
+  try {
+    const r = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ githubOAuthClientId: clientId, githubOAuthClientSecret: clientSecret }),
+    });
+    const j = await r.json();
+    if (j.ok) {
+      closeGhSetup();
+      toast('OAuth App saved — redirecting to GitHub...');
+      setTimeout(() => { window.location = '/api/auth/github/start'; }, 1200);
+    } else {
+      toast('❌ ' + (j.message || 'Save failed'), true);
+    }
+  } catch { toast('❌ Network error — proxy unreachable', true); }
 }
 
 function toast(msg, err = false) {
