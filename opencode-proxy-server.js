@@ -1596,7 +1596,7 @@ const server = http.createServer((req, res) => {
     } catch (e) {
       console.error('[OAuth] saveOauthState error:', e && e.message ? e.message : e);
     }
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(CFG.githubOAuthClientId)}&scope=read%3Auser&state=${_oauthState}`;
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(CFG.githubOAuthClientId)}&redirect_uri=http%3A%2F%2F127.0.0.1%3A4001%2Fapi%2Fauth%2Fgithub%2Fcallback&scope=read%3Auser&state=${_oauthState}`;
     res.writeHead(302, { Location: authUrl });
     return res.end();
   }
