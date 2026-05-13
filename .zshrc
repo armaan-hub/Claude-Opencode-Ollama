@@ -133,76 +133,39 @@ run-claude-opencode() {
   mode=$(printf '%s\n' \
     "normal  →  Safe mode (shows trust prompt)" \
     "full    →  Full permissions (no prompts)" \
-    | fzf --prompt="⚡ Mode > " --height=6 --border \
+    | fzf --prompt="⚡ Mode > " --height=6 --border --reverse \
           --header="↑↓ navigate  Enter select  Esc cancel" \
     | awk '{print $1}')
   [[ -z "$mode" ]] && return 0
 
   # ── Step 2: model ─────────────────────────────────────────────
   local model
-  model=$(printf '%s\n' \
-    "── OpenCode Go Plan ─────────────────────────────" \
-    "glm-5.1                → GLM-5.1" \
-    "glm-5                  → GLM-5" \
-    "kimi-k2.5              → Kimi K2.5" \
-    "kimi-k2.6              → Kimi K2.6" \
-    "mimo-v2.5              → MiMo-V2.5 (≤256K)" \
-    "mimo-v2.5-pro          → MiMo-V2.5-Pro" \
-    "minimax-m2.7           → MiniMax M2.7" \
-    "minimax-m2.5           → MiniMax M2.5" \
-    "qwen3.6-plus           → Qwen3.6 Plus" \
-    "qwen3.5-plus           → Qwen3.5 Plus" \
-    "deepseek-v4-pro        → DeepSeek V4 Pro" \
-    "deepseek-v4-flash      → DeepSeek V4 Flash" \
-    "── Free Zen Models (no credits) ─────────────────" \
-    "big-pickle             → Big Pickle (Free)" \
-    "minimax-m2.5-free      → MiniMax M2.5 (Free)" \
-    "nemotron-3-super-free  → Nemotron 3 Super (Free)" \
-    "ring-2.6-1t-free       → Ring 2.6 1T (Free)" \
-    "trinity-large-preview-free → Trinity Large (Free)" \
-    "qwen3.6-plus-free      → Qwen3.6 Plus (Free)" \
-    "kimi-k2.5-free         → Kimi K2.5 (Free)" \
-    "glm-5-free             → GLM-5 (Free)" \
-    "── Local Ollama Models ──────────────────────────" \
-    "qwen3:8b               → Qwen3 8B (local)" \
-    "qwen3:14b              → Qwen3 14B (local)" \
-    "llama3.3:70b           → Llama 3.3 70B (local)" \
-    "── Groq (fast, free tier) ───────────────────────" \
-    "llama-3.3-70b-versatile → Llama 3.3 70B on Groq (free tier, fast)" \
-    "llama-3.1-8b-instant    → Llama 3.1 8B on Groq (fastest free)" \
-    "deepseek-r1-distill-llama-70b-32768 → DeepSeek R1 Distill on Groq (free)" \
-    "── Nvidia NIM (free credits) ────────────────────" \
-    "meta/llama-3.3-70b-instruct → Llama 3.3 70B on Nvidia NIM (free credits)" \
-    "meta/llama-3.1-8b-instruct  → Llama 3.1 8B on Nvidia NIM (free credits)" \
-    "── OpenRouter Free ──────────────────────────────" \
-    "google/gemma-3-27b-it:free               → Gemma 3 27B via OpenRouter (free)" \
-    "meta-llama/llama-3.3-70b-instruct:free   → Llama 3.3 70B via OpenRouter (free)" \
-    "deepseek/deepseek-r1:free                → DeepSeek R1 via OpenRouter (free)" \
-    "── GitHub Copilot (subscription) ───────────────" \
-    "copilot/claude-opus-4.7     → Claude Opus 4.7 via GitHub Copilot (subscription)" \
-    "copilot/claude-opus-4.6-1m  → Claude Opus 4.6 1M context via GitHub Copilot" \
-    "copilot/claude-sonnet-4.6   → Claude Sonnet 4.6 via GitHub Copilot (subscription)" \
-    "copilot/claude-sonnet-4.5   → Claude Sonnet 4.5 via GitHub Copilot (subscription)" \
-    "copilot/claude-haiku-4.5    → Claude Haiku 4.5 via GitHub Copilot (subscription)" \
-    "copilot/claude-opus-4.5     → Claude Opus 4.5 via GitHub Copilot (subscription)" \
-    "copilot/gpt-5.4             → GPT-5.4 via GitHub Copilot (subscription)" \
-    "copilot/gpt-5.2             → GPT-5.2 via GitHub Copilot (subscription)" \
-    "copilot/gpt-5-mini          → GPT-5 mini via GitHub Copilot (subscription)" \
-    "copilot/gpt-4.1             → GPT-4.1 via GitHub Copilot (subscription)" \
-    "copilot/grok-code-fast-1    → Grok Code Fast 1 via GitHub Copilot (subscription)" \
-    "──── Google Gemini ─────────────────────────────────────────────" \
-    "gemini/gemini-2.5-pro         → Gemini 2.5 Pro (requires API key)" \
-    "gemini/gemini-2.5-flash       → Gemini 2.5 Flash (requires API key)" \
-    "gemini/gemini-2.0-flash       → Gemini 2.0 Flash (requires API key)" \
-    "──── OpenAI / Codex ────────────────────────────────────────────" \
-    "openai/gpt-4o                 → GPT-4o (requires API key)" \
-    "openai/gpt-4o-mini            → GPT-4o mini (requires API key)" \
-    "openai/o4-mini                → o4-mini (requires API key)" \
-    "openai/codex-mini-latest      → Codex mini (requires API key)" \
+  local _model_list
+  _model_list=$(curl -s --max-time 5 http://localhost:4001/v1/models 2>/dev/null \
+    | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    prev = None
+    for m in data.get('data', []):
+        mid = m.get('id', '')
+        owner = m.get('owned_by', 'other')
+        if owner != prev:
+            print(f'── {owner.upper()} ──')
+            prev = owner
+        print(mid)
+except:
+    pass
+" 2>/dev/null)
+  if [[ -z "$_model_list" ]]; then
+    echo "⚠️  Could not reach proxy at http://localhost:4001"
+    echo "   Start it with: node ~/opencode-proxy-server.js &"
+    return 1
+  fi
+  model=$(echo "$_model_list" \
     | grep -v "^──" \
-    | fzf --prompt="🤖 Model > " --height=30 --border \
-          --header="↑↓ navigate  Enter select  Esc cancel" \
-    | awk '{print $1}')
+    | fzf --prompt="🤖 Model > " --height=30 --border --reverse \
+          --header="↑↓ navigate  Enter select  Esc cancel")
   [[ -z "$model" ]] && return 0
 
   # ── Step 2b: GitHub Copilot auth check ────────────────────────
@@ -302,4 +265,50 @@ except Exception as e:
       echo "   (Takes effect on your next Claude Code message)"
       ;;
   esac
+}
+
+# switch-model — like set-model but with fzf picker when called with no args
+# Usage:
+#   switch-model               → fzf picker to choose a model
+#   switch-model <model-name>  → switch directly (like set-model)
+#   switch-model clear         → remove override
+switch-model() {
+  local PROXY="http://localhost:4001"
+  local ACTIVE_MODEL_FILE="$HOME/.claude/active-model"
+
+  if [[ -z "$1" || "$1" == "list" ]]; then
+    local _model_list
+    _model_list=$(curl -s --max-time 5 "$PROXY/v1/models" 2>/dev/null \
+      | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    prev = None
+    for m in data.get('data', []):
+        mid = m.get('id', '')
+        owner = m.get('owned_by', 'other')
+        if owner != prev:
+            print(f'── {owner.upper()} ──')
+            prev = owner
+        print(mid)
+except:
+    pass
+" 2>/dev/null)
+    if [[ -z "$_model_list" ]]; then
+      echo "⚠️  Could not reach proxy at $PROXY"
+      return 1
+    fi
+    local chosen
+    chosen=$(echo "$_model_list" \
+      | grep -v "^──" \
+      | fzf --prompt="🤖 Switch Model > " --height=30 --border --reverse \
+            --header="↑↓ navigate  Enter select  Esc cancel  (takes effect on next message)")
+    [[ -z "$chosen" ]] && return 0
+    mkdir -p "$(dirname "$ACTIVE_MODEL_FILE")"
+    echo "$chosen" > "$ACTIVE_MODEL_FILE"
+    echo "✅ Model switched to: $chosen"
+    echo "   (Takes effect on your next Claude Code message)"
+  else
+    set-model "$@"
+  fi
 }
