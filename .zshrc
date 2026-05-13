@@ -128,6 +128,7 @@ export ANTHROPIC_BASE_URL="http://localhost:4000"
 #   Step 1: pick  normal (trust prompt) or full (no prompts)
 #   Step 2: pick  any OpenCode / Zen-free / Ollama model
 run-claude-opencode() {
+  local PROXY="http://localhost:4001"
   # ── Step 1: mode ──────────────────────────────────────────────
   local mode
   mode=$(printf '%s\n' \
@@ -141,29 +142,24 @@ run-claude-opencode() {
   # ── Step 2: model ─────────────────────────────────────────────
   local model
   local _model_list
-  _model_list=$(curl -s --max-time 5 http://localhost:4001/v1/models 2>/dev/null \
+  _model_list=$(curl -s --max-time 5 "$PROXY/v1/models" 2>/dev/null \
     | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
-    prev = None
     for m in data.get('data', []):
         mid = m.get('id', '')
-        owner = m.get('owned_by', 'other')
-        if owner != prev:
-            print(f'── {owner.upper()} ──')
-            prev = owner
-        print(mid)
-except:
+        if mid:
+            print(mid)
+except (json.JSONDecodeError, KeyError, TypeError, ValueError):
     pass
 " 2>/dev/null)
   if [[ -z "$_model_list" ]]; then
-    echo "⚠️  Could not reach proxy at http://localhost:4001"
+    echo "⚠️  Could not reach proxy at $PROXY"
     echo "   Start it with: node ~/opencode-proxy-server.js &"
     return 1
   fi
   model=$(echo "$_model_list" \
-    | grep -v "^──" \
     | fzf --prompt="🤖 Model > " --height=30 --border --reverse \
           --header="↑↓ navigate  Enter select  Esc cancel")
   [[ -z "$model" ]] && return 0
@@ -185,24 +181,24 @@ except:
 
   if [[ "$model" == gemini/* ]]; then
     local gemini_key
-    gemini_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 http://localhost:4001/api/providers 2>/dev/null \
+    gemini_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 "$PROXY/api/providers" 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='gemini'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
     if [[ -z "$gemini_key" ]]; then
       echo ""
       echo "⚠️  Google Gemini requires an API key."
-      echo "   Connect it at: http://localhost:4001/providers"
+      echo "   Connect it at: $PROXY/providers"
       return 1
     fi
   fi
 
   if [[ "$model" == openai/* ]]; then
     local openai_key
-    openai_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 http://localhost:4001/api/providers 2>/dev/null \
+    openai_key=$(curl -s --max-time 5 --retry 2 --retry-delay 1 "$PROXY/api/providers" 2>/dev/null \
       | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='openai'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
     if [[ -z "$openai_key" ]]; then
       echo ""
       echo "⚠️  OpenAI requires an API key."
-      echo "   Connect it at: http://localhost:4001/providers"
+      echo "   Connect it at: $PROXY/providers"
       return 1
     fi
   fi
@@ -210,10 +206,10 @@ except:
   # ── Step 3: launch ────────────────────────────────────────────
   echo "🚀 Launching Claude Code [$mode] → $model"
   if [[ "$mode" == "full" ]]; then
-    ANTHROPIC_BASE_URL="http://localhost:4001" \
+    ANTHROPIC_BASE_URL="$PROXY" \
       claude --model "$model" --dangerously-skip-permissions
   else
-    ANTHROPIC_BASE_URL="http://localhost:4001" \
+    ANTHROPIC_BASE_URL="$PROXY" \
       claude --model "$model"
   fi
 }
@@ -271,7 +267,7 @@ except Exception as e:
 # Usage:
 #   switch-model               → fzf picker to choose a model
 #   switch-model <model-name>  → switch directly (like set-model)
-#   switch-model clear         → remove override
+#   switch-model clear         → remove model override
 switch-model() {
   local PROXY="http://localhost:4001"
   local ACTIVE_MODEL_FILE="$HOME/.claude/active-model"
@@ -283,15 +279,11 @@ switch-model() {
 import sys, json
 try:
     data = json.load(sys.stdin)
-    prev = None
     for m in data.get('data', []):
         mid = m.get('id', '')
-        owner = m.get('owned_by', 'other')
-        if owner != prev:
-            print(f'── {owner.upper()} ──')
-            prev = owner
-        print(mid)
-except:
+        if mid:
+            print(mid)
+except (json.JSONDecodeError, KeyError, TypeError, ValueError):
     pass
 " 2>/dev/null)
     if [[ -z "$_model_list" ]]; then
@@ -300,11 +292,40 @@ except:
     fi
     local chosen
     chosen=$(echo "$_model_list" \
-      | grep -v "^──" \
       | fzf --prompt="🤖 Switch Model > " --height=30 --border --reverse \
             --header="↑↓ navigate  Enter select  Esc cancel  (takes effect on next message)")
     [[ -z "$chosen" ]] && return 0
     mkdir -p "$(dirname "$ACTIVE_MODEL_FILE")"
+    # Auth validation (same as run-claude-opencode)
+    if [[ "$chosen" == copilot/* ]]; then
+      local copilot_token
+      copilot_token=$(gh auth token 2>/dev/null)
+      if [[ -z "$copilot_token" ]]; then
+        echo ""
+        echo "⚠️  GitHub Copilot requires authentication."
+        echo "   Run: gh auth login"
+        return 1
+      fi
+      echo "🐙 GitHub Copilot: authenticated ✅ ($(gh auth whoami 2>/dev/null || echo 'logged in'))"
+    fi
+    if [[ "$chosen" == gemini/* ]]; then
+      local gemini_key
+      gemini_key=$(curl -s --max-time 5 http://localhost:4001/api/providers 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='gemini'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
+      if [[ -z "$gemini_key" ]]; then
+        echo "⚠️  Google Gemini requires an API key. Connect it at: http://localhost:4001/providers"
+        return 1
+      fi
+    fi
+    if [[ "$chosen" == openai/* ]]; then
+      local openai_key
+      openai_key=$(curl -s --max-time 5 http://localhost:4001/api/providers 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='openai'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
+      if [[ -z "$openai_key" ]]; then
+        echo "⚠️  OpenAI requires an API key. Connect it at: http://localhost:4001/providers"
+        return 1
+      fi
+    fi
     echo "$chosen" > "$ACTIVE_MODEL_FILE"
     echo "✅ Model switched to: $chosen"
     echo "   (Takes effect on your next Claude Code message)"
