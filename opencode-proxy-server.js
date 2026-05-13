@@ -1588,7 +1588,12 @@ const server = http.createServer((req, res) => {
     }
     _oauthState = require('crypto').randomBytes(16).toString('hex');
     // persist state to disk so server restarts don't break the flow
-    try { saveOauthState(_oauthState); } catch (e) { /* log but continue */ }
+    try {
+      const ok = saveOauthState(_oauthState);
+      if (!ok) console.error('[OAuth] saveOauthState returned false');
+    } catch (e) {
+      console.error('[OAuth] saveOauthState error:', e && e.message ? e.message : e);
+    }
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(CFG.githubOAuthClientId)}&scope=read%3Auser&state=${_oauthState}`;
     res.writeHead(302, { Location: authUrl });
     return res.end();
@@ -1608,7 +1613,12 @@ const server = http.createServer((req, res) => {
       return res.end();
     }
     // consume and remove persisted state
-    try { deleteOauthState(); } catch (e) {}
+    try {
+      const ok = deleteOauthState();
+      if (!ok) console.error('[OAuth] deleteOauthState returned false');
+    } catch (e) {
+      console.error('[OAuth] deleteOauthState error:', e && e.message ? e.message : e);
+    }
     _oauthState = ''; // consume
 
     const exchangeBody = JSON.stringify({
