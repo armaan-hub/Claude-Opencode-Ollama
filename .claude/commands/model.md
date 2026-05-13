@@ -66,18 +66,20 @@ else:
     # treat as a model name to switch to
     model_id = args
     all_models = get_models()
-    if all_models and model_id not in all_models:
+    if not all_models:
+        print(f"⚠️  Proxy unreachable — writing '{model_id}' unvalidated.")
+    elif model_id not in all_models:
         print(f"❌ Unknown model: {model_id}")
         print("   Run /model to see the list.")
-        sys.exit(0)
+        sys.exit(1)
 
-    # auth check for copilot
+    # Only copilot/ requires gh auth; other providers use proxy-configured API keys
     if model_id.startswith("copilot/"):
         result = subprocess.run(["gh","auth","whoami"], capture_output=True, text=True)
         if result.returncode != 0 or not result.stdout.strip():
             print("❌ GitHub Copilot requires login.")
             print("   Run: gh auth login")
-            sys.exit(0)
+            sys.exit(1)
 
     # write
     os.makedirs(os.path.dirname(ACTIVE), exist_ok=True)
