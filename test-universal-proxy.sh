@@ -27,15 +27,19 @@ check "Proxy health check" \
   "curl -s $PROXY/health" \
   '"status":"ok"'
 
-# Test 2: Models list includes Groq model
-check "Models list has Groq llama-3.3-70b-versatile" \
+# Test 2: Models list includes Groq model when API key connected
+curl -s -X POST $PROXY/api/providers/groq/connect -H "Content-Type: application/json" -d '{"apiKey":"test-key-do-not-use"}' > /dev/null
+check "Models list has Groq llama-3.3-70b-versatile (when connected)" \
   "curl -s $PROXY/v1/models | python3 -c \"import sys,json; ids=[m['id'] for m in json.load(sys.stdin)['data']]; print(chr(10).join(ids))\"" \
   "llama-3.3-70b-versatile"
+curl -s -X POST $PROXY/api/providers/groq/disconnect > /dev/null
 
-# Test 3: Models list includes Nvidia model
-check "Models list has Nvidia meta/llama-3.3-70b-instruct" \
+# Test 3: Models list includes Nvidia model when API key connected
+curl -s -X POST $PROXY/api/providers/nvidia/connect -H "Content-Type: application/json" -d '{"apiKey":"test-key-do-not-use"}' > /dev/null
+check "Models list has Nvidia meta/llama-3.3-70b-instruct (when connected)" \
   "curl -s $PROXY/v1/models | python3 -c \"import sys,json; ids=[m['id'] for m in json.load(sys.stdin)['data']]; print(chr(10).join(ids))\"" \
   "meta/llama-3.3-70b-instruct"
+curl -s -X POST $PROXY/api/providers/nvidia/disconnect > /dev/null
 
 # Test 4: /api/active-model returns null when no file
 check "api/active-model returns null when no file" \
