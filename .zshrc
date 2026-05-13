@@ -205,6 +205,8 @@ except (json.JSONDecodeError, KeyError, TypeError, ValueError):
 
   # ── Step 3: launch ────────────────────────────────────────────
   echo "🚀 Launching Claude Code [$mode] → $model"
+  mkdir -p "$HOME/.claude"
+  printf '%s\n' "$model" > "$HOME/.claude/active-model"
   if [[ "$mode" == "full" ]]; then
     ANTHROPIC_BASE_URL="$PROXY" \
       claude --model "$model" --dangerously-skip-permissions
