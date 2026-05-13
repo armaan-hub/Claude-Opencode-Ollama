@@ -1999,21 +1999,9 @@ const server = http.createServer((req, res) => {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: "GitHub Copilot: not logged in. Run 'gh auth login' in terminal or use the proxy dashboard." }));
         }
-        if ((providerInfo.name === 'Google Gemini' || providerInfo.name === 'OpenAI') && !providerInfo.apiKey) {
+        if (['Google Gemini', 'OpenAI', 'Groq', 'Nvidia NIM', 'OpenRouter'].includes(providerInfo.name) && !providerInfo.apiKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: { message: `${providerInfo.name}: API key not configured. Visit http://localhost:4001/providers to connect.`, type: 'authentication_error' } }));
-        }
-        if (providerInfo.name === 'Groq' && !providerInfo.apiKey) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: { message: 'Groq: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
-        }
-        if (providerInfo.name === 'Nvidia NIM' && !providerInfo.apiKey) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: { message: 'NVIDIA NIM: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
-        }
-        if (providerInfo.name === 'OpenRouter' && !providerInfo.apiKey) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: { message: 'OpenRouter: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
