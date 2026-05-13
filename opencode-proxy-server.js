@@ -18,6 +18,7 @@ const https = require('https');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { saveOauthState, readOauthState, deleteOauthState, STATE_PATH } = require('./lib/oauth_state');
 
 const PORT = 4001;
 const OPENCODE_HOST = 'opencode.ai';
@@ -1586,6 +1587,8 @@ const server = http.createServer((req, res) => {
       return res.end();
     }
     _oauthState = require('crypto').randomBytes(16).toString('hex');
+    // persist state to disk so server restarts don't break the flow
+    try { saveOauthState(_oauthState); } catch (e) { /* log but continue */ }
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(CFG.githubOAuthClientId)}&scope=read%3Auser&state=${_oauthState}`;
     res.writeHead(302, { Location: authUrl });
     return res.end();
@@ -1595,11 +1598,18 @@ const server = http.createServer((req, res) => {
     const qs = url.searchParams;
     const code  = qs.get('code')  || '';
     const state = qs.get('state') || '';
+    // If server restarted, try reading saved state from disk
+    if (!_oauthState) {
+      const saved = readOauthState();
+      if (saved && saved.state) _oauthState = saved.state;
+    }
     if (!code || !_oauthState || state !== _oauthState) {
       res.writeHead(302, { Location: '/providers?error=bad-state' });
       return res.end();
     }
-    _oauthState = ''; // consume state
+    // consume and remove persisted state
+    try { deleteOauthState(); } catch (e) {}
+    _oauthState = ''; // consume
 
     const exchangeBody = JSON.stringify({
       client_id:     CFG.githubOAuthClientId,
