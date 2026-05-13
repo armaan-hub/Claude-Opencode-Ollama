@@ -1176,7 +1176,7 @@ button:hover{opacity:.85}
   <div class="modal">
     <h3>GitHub OAuth App Setup</h3>
     <p>Register a GitHub OAuth App to enable direct GitHub authentication.
-       Set the callback URL to <code style="background:#333;padding:1px 5px;border-radius:3px">http://localhost:4001/api/auth/github/callback</code></p>
+       Set the callback URL to <code style="background:#333;padding:1px 5px;border-radius:3px">http://127.0.0.1:4001/api/auth/github/callback</code></p>
     <a href="https://github.com/settings/developers" target="_blank" class="modal-link">→ Open GitHub Developer Settings</a><br><br>
     <input id="gh-client-id" type="text" placeholder="Client ID (e.g. Ov23liXXXXXXXXXXX)">
     <input id="gh-client-secret" type="password" placeholder="Client Secret">
