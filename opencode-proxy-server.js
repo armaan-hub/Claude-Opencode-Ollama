@@ -1892,17 +1892,26 @@ const server = http.createServer((req, res) => {
             ...m,
             context_length: m.context_length || MODEL_CTX[m.id] || 128000,
           }));
-          const groqModelsList       = [...GROQ_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'groq',       context_length: 131072 }));
-          const nvidiaModelsList     = [...NVIDIA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'nvidia',     context_length: 131072 }));
-          const openrouterModelsList = [...OPENROUTER_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'openrouter', context_length: 131072 }));
+          const groqModelsList       = GROQ_API_KEY
+            ? [...GROQ_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'groq',       context_length: 131072 }))
+            : [];
+          const nvidiaModelsList     = NVIDIA_API_KEY
+            ? [...NVIDIA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'nvidia',     context_length: 131072 }))
+            : [];
+          const openrouterModelsList = OPENROUTER_API_KEY
+            ? [...OPENROUTER_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'openrouter', context_length: 131072 }))
+            : [];
           const ollamaModelsList     = [...OLLAMA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'ollama',     context_length: 131072 }));
-          const copilotModelsList = COPILOT_MODELS.map(id => ({
-            id,
-            object:         'model',
-            created:        0,
-            owned_by:       'github-copilot',
-            context_length: 128000,
-          }));
+          const copilotToken         = getCopilotToken();
+          const copilotModelsList    = copilotToken
+            ? COPILOT_MODELS.map(id => ({
+                id,
+                object:         'model',
+                created:        0,
+                owned_by:       'github-copilot',
+                context_length: 128000,
+              }))
+            : [];
           const geminiModelsList = GEMINI_API_KEY
             ? [...GEMINI_MODELS].map(id => ({ id: `gemini/${id}`, object: 'model', owned_by: 'google-gemini', created: 0, context_length: 131072 }))
             : [];
@@ -1993,6 +2002,18 @@ const server = http.createServer((req, res) => {
         if ((providerInfo.name === 'Google Gemini' || providerInfo.name === 'OpenAI') && !providerInfo.apiKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: { message: `${providerInfo.name}: API key not configured. Visit http://localhost:4001/providers to connect.`, type: 'authentication_error' } }));
+        }
+        if (providerInfo.name === 'Groq' && !providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: { message: 'Groq: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
+        }
+        if (providerInfo.name === 'Nvidia NIM' && !providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: { message: 'NVIDIA NIM: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
+        }
+        if (providerInfo.name === 'OpenRouter' && !providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: { message: 'OpenRouter: API key not configured. Visit http://localhost:4001/providers to connect.', type: 'authentication_error' } }));
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
