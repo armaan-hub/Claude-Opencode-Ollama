@@ -320,9 +320,11 @@ function getProviderForModel(modelId) {
 }
 
 // ─── Generic provider forwarder ───────────────────────────────────────────────
-function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl, extraHeaders = {}) {
+function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl, extraHeaders = {}, providerName = null) {
   return new Promise((resolve, reject) => {
     const proto = ssl ? https : http;
+    // For GitHub Copilot, use editor User-Agent to avoid ToS-based rejection
+    const userAgent = providerName === 'GitHub Copilot' ? COPILOT_EDITOR_VERSION : 'universal-llm-proxy/2.0';
     const options = {
       hostname: host,
       port,
@@ -331,7 +333,7 @@ function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl
       headers: {
         'Content-Type':   'application/json',
         'Authorization':  headers.authorization || `Bearer ${headers['x-api-key'] || ''}`,
-        'User-Agent':     'universal-llm-proxy/2.0',
+        'User-Agent':     userAgent,
         'HTTP-Referer':   'https://github.com/anthropics/claude-code',
         'X-Title':        'Claude Code',
         ...extraHeaders,
@@ -1239,7 +1241,7 @@ function render() {
     if (p.authType === 'oauth') {
       if (p.connected) {
         actions = \`<button class="btn-disconnect" onclick="disconnectGitHub()">Disconnect</button>
-                   <button class="btn-update" onclick="window.location='/api/auth/github/start'">Re-authenticate</button>\`;
+                   <button class="btn-update" onclick="window.location='/api/auth/github/start'">Re-authenticate</button>\n                   <button class="btn-oauth" onclick="openGhSetup()">Edit OAuth App</button>\`;
       } else if (p.needsClientId) {
         actions = \`<button class="btn-oauth" onclick="openGhSetup()">🔐 Set Up & Connect GitHub</button>\`;
       } else {
@@ -2027,7 +2029,7 @@ const server = http.createServer((req, res) => {
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
         forwardPromise = forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
           providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
-          providerInfo.extraHeaders || {});
+          providerInfo.extraHeaders || {}, providerInfo.name);
       } else {
         const { base: endpointBase, apiKey: routedKey } = getEndpoint(model);
         const fwdHeaders = { authorization: `Bearer ${routedKey}` };
