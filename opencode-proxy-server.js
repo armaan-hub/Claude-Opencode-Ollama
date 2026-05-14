@@ -58,6 +58,22 @@ const COPILOT_MODELS = [
   'copilot/grok-code-fast-1',
 ];
 
+// Rate multipliers match GitHub Copilot CLI's model selector (0 = free, 1 = standard, etc.)
+const COPILOT_RATE_MULTIPLIERS = {
+  'copilot/gpt-5.5':            7.5,
+  'copilot/gpt-5.4':            1,
+  'copilot/gpt-5.2':            1,
+  'copilot/gpt-5-mini':         0,
+  'copilot/gpt-4.1':            0,
+  'copilot/claude-sonnet-4.6':  1,
+  'copilot/claude-sonnet-4.5':  1,
+  'copilot/claude-haiku-4.5':   0.33,
+  'copilot/claude-opus-4.7':    15,
+  'copilot/claude-opus-4.6-1m': 15,
+  'copilot/claude-opus-4.5':    1,
+  'copilot/grok-code-fast-1':   1,
+};
+
 const CONFIG_PATH = path.join(os.homedir(), 'opencode-proxy-config.json');
 
 const DEFAULT_CONFIG = {
@@ -1928,13 +1944,21 @@ const server = http.createServer((req, res) => {
           const ollamaModelsList     = [...OLLAMA_MODELS].map(id => ({ id, object: 'model', created: 0, owned_by: 'ollama',     context_length: 131072 }));
           const copilotToken         = getCopilotToken();
           const copilotModelsList    = copilotToken
-            ? COPILOT_MODELS.map(id => ({
-                id,
-                object:         'model',
-                created:        0,
-                owned_by:       'github-copilot',
-                context_length: 128000,
-              }))
+            ? COPILOT_MODELS.map(id => {
+                const rate = COPILOT_RATE_MULTIPLIERS[id];
+                const rateTag = rate === 0 ? ' [FREE]'
+                              : rate !== undefined && rate < 1 ? ` [${rate}x]`
+                              : rate !== undefined && rate > 1 ? ` [${rate}x premium]`
+                              : '';
+                return {
+                  id,
+                  object:           'model',
+                  created:          0,
+                  owned_by:         `github-copilot${rateTag}`,
+                  context_length:   128000,
+                  x_copilot_rate:   rate !== undefined ? rate : null,
+                };
+              })
             : [];
           const geminiModelsList = GEMINI_API_KEY
             ? [...GEMINI_MODELS].map(id => ({ id: `gemini/${id}`, object: 'model', owned_by: 'google-gemini', created: 0, context_length: 131072 }))
@@ -1985,8 +2009,11 @@ const server = http.createServer((req, res) => {
       }
 
       // ── Hot-swap model override ───────────────────────────────────────────
+      // Only override "bare" default model names (e.g. claude-opus-4-7).
+      // If model already contains '/', user made an explicit /model selection — honour it.
       const activeModel = readActiveModel();
-      if (activeModel) {
+      const isExplicitProviderModel = (anthropicBody.model || '').includes('/');
+      if (activeModel && !isExplicitProviderModel) {
         console.log(`[MODEL OVERRIDE] ${anthropicBody.model} → ${activeModel}`);
         anthropicBody.model = activeModel;
       }
