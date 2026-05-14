@@ -1,0 +1,2491 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "jest.config.js",
+      "file_type": "code",
+      "source_file": "jest.config.js",
+      "source_location": "L1",
+      "id": "jest_config_js",
+      "community": 8,
+      "norm_label": "jest.config.js"
+    },
+    {
+      "label": "proxy-client.test.js",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L1",
+      "id": "tests_proxy_client_test_js",
+      "community": 0,
+      "norm_label": "proxy-client.test.js"
+    },
+    {
+      "label": "EventEmitter",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L1",
+      "id": "tests_proxy_client_test_eventemitter",
+      "community": 0,
+      "norm_label": "eventemitter"
+    },
+    {
+      "label": "http",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L2",
+      "id": "tests_proxy_client_test_http",
+      "community": 0,
+      "norm_label": "http"
+    },
+    {
+      "label": "calls",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L11",
+      "id": "tests_proxy_client_test_calls",
+      "community": 0,
+      "norm_label": "calls"
+    },
+    {
+      "label": "res",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L16",
+      "id": "tests_proxy_client_test_res",
+      "community": 0,
+      "norm_label": "res"
+    },
+    {
+      "label": "req",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L17",
+      "id": "tests_proxy_client_test_req",
+      "community": 0,
+      "norm_label": "req"
+    },
+    {
+      "label": "{ getProxyStatus, PROXY_URL }",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L34",
+      "id": "tests_proxy_client_test_getproxystatus_proxy_url",
+      "community": 0,
+      "norm_label": "{ getproxystatus, proxy_url }"
+    },
+    {
+      "label": "{ getProxyStatus }",
+      "file_type": "code",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L73",
+      "id": "tests_proxy_client_test_getproxystatus",
+      "community": 0,
+      "norm_label": "{ getproxystatus }"
+    },
+    {
+      "label": "config-manager.test.js",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L1",
+      "id": "tests_config_manager_test_js",
+      "community": 1,
+      "norm_label": "config-manager.test.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L1",
+      "id": "tests_config_manager_test_fs",
+      "community": 1,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L2",
+      "id": "tests_config_manager_test_path",
+      "community": 1,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L3",
+      "id": "tests_config_manager_test_os",
+      "community": 1,
+      "norm_label": "os"
+    },
+    {
+      "label": "TEST_HOME",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L5",
+      "id": "tests_config_manager_test_test_home",
+      "community": 1,
+      "norm_label": "test_home"
+    },
+    {
+      "label": "loadConfigManager()",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L7",
+      "id": "tests_config_manager_test_loadconfigmanager",
+      "community": 1,
+      "norm_label": "loadconfigmanager()"
+    },
+    {
+      "label": "createProviders()",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L13",
+      "id": "tests_config_manager_test_createproviders",
+      "community": 1,
+      "norm_label": "createproviders()"
+    },
+    {
+      "label": "{ readConfig, CONFIG_DIR, CONFIG_FILE }",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L29",
+      "id": "tests_config_manager_test_readconfig_config_dir_config_file",
+      "community": 1,
+      "norm_label": "{ readconfig, config_dir, config_file }"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L31",
+      "id": "tests_config_manager_test_config",
+      "community": 1,
+      "norm_label": "config"
+    },
+    {
+      "label": "existing",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L46",
+      "id": "tests_config_manager_test_existing",
+      "community": 1,
+      "norm_label": "existing"
+    },
+    {
+      "label": "{ writeConfig, CONFIG_FILE }",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L59",
+      "id": "tests_config_manager_test_writeconfig_config_file",
+      "community": 1,
+      "norm_label": "{ writeconfig, config_file }"
+    },
+    {
+      "label": "written",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L69",
+      "id": "tests_config_manager_test_written",
+      "community": 1,
+      "norm_label": "written"
+    },
+    {
+      "label": "{ writeConfig, CONFIG_DIR, CONFIG_FILE }",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L74",
+      "id": "tests_config_manager_test_writeconfig_config_dir_config_file",
+      "community": 1,
+      "norm_label": "{ writeconfig, config_dir, config_file }"
+    },
+    {
+      "label": "oldConfig",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L77",
+      "id": "tests_config_manager_test_oldconfig",
+      "community": 1,
+      "norm_label": "oldconfig"
+    },
+    {
+      "label": "newConfig",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L80",
+      "id": "tests_config_manager_test_newconfig",
+      "community": 1,
+      "norm_label": "newconfig"
+    },
+    {
+      "label": "{ writeConfig }",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L89",
+      "id": "tests_config_manager_test_writeconfig",
+      "community": 1,
+      "norm_label": "{ writeconfig }"
+    },
+    {
+      "label": "writeSpy",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L105",
+      "id": "tests_config_manager_test_writespy",
+      "community": 1,
+      "norm_label": "writespy"
+    },
+    {
+      "label": "{ getProvider, CONFIG_DIR, CONFIG_FILE }",
+      "file_type": "code",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L119",
+      "id": "tests_config_manager_test_getprovider_config_dir_config_file",
+      "community": 1,
+      "norm_label": "{ getprovider, config_dir, config_file }"
+    },
+    {
+      "label": "auth.test.js",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L1",
+      "id": "tests_auth_test_js",
+      "community": 4,
+      "norm_label": "auth.test.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L1",
+      "id": "tests_auth_test_fs",
+      "community": 4,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L2",
+      "id": "tests_auth_test_path",
+      "community": 4,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L3",
+      "id": "tests_auth_test_os",
+      "community": 4,
+      "norm_label": "os"
+    },
+    {
+      "label": "TEST_HOME",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L5",
+      "id": "tests_auth_test_test_home",
+      "community": 4,
+      "norm_label": "test_home"
+    },
+    {
+      "label": "createDefaultConfig()",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L14",
+      "id": "tests_auth_test_createdefaultconfig",
+      "community": 4,
+      "norm_label": "createdefaultconfig()"
+    },
+    {
+      "label": "mockConsole()",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L26",
+      "id": "tests_auth_test_mockconsole",
+      "community": 4,
+      "norm_label": "mockconsole()"
+    },
+    {
+      "label": "{ authCommand }",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L47",
+      "id": "tests_auth_test_authcommand",
+      "community": 4,
+      "norm_label": "{ authcommand }"
+    },
+    {
+      "label": "githubSecrets",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L50",
+      "id": "tests_auth_test_githubsecrets",
+      "community": 4,
+      "norm_label": "githubsecrets"
+    },
+    {
+      "label": "secrets",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L52",
+      "id": "tests_auth_test_secrets",
+      "community": 4,
+      "norm_label": "secrets"
+    },
+    {
+      "label": "configFile",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L70",
+      "id": "tests_auth_test_configfile",
+      "community": 4,
+      "norm_label": "configfile"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L73",
+      "id": "tests_auth_test_config",
+      "community": 4,
+      "norm_label": "config"
+    },
+    {
+      "label": "auditLogger",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L143",
+      "id": "tests_auth_test_auditlogger",
+      "community": 4,
+      "norm_label": "auditlogger"
+    },
+    {
+      "label": "appendSpy",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L144",
+      "id": "tests_auth_test_appendspy",
+      "community": 4,
+      "norm_label": "appendspy"
+    },
+    {
+      "label": "consoleSpy",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L186",
+      "id": "tests_auth_test_consolespy",
+      "community": 4,
+      "norm_label": "consolespy"
+    },
+    {
+      "label": "audit-logger.test.js",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L1",
+      "id": "tests_audit_logger_test_js",
+      "community": 5,
+      "norm_label": "audit-logger.test.js"
+    },
+    {
+      "label": "test",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L1",
+      "id": "tests_audit_logger_test_test",
+      "community": 5,
+      "norm_label": "test"
+    },
+    {
+      "label": "assert",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L2",
+      "id": "tests_audit_logger_test_assert",
+      "community": 5,
+      "norm_label": "assert"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L3",
+      "id": "tests_audit_logger_test_fs",
+      "community": 5,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L4",
+      "id": "tests_audit_logger_test_path",
+      "community": 5,
+      "norm_label": "path"
+    },
+    {
+      "label": "loadAuditLoggerWithHome()",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L9",
+      "id": "tests_audit_logger_test_loadauditloggerwithhome",
+      "community": 5,
+      "norm_label": "loadauditloggerwithhome()"
+    },
+    {
+      "label": "homeDir",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L21",
+      "id": "tests_audit_logger_test_homedir",
+      "community": 5,
+      "norm_label": "homedir"
+    },
+    {
+      "label": "{ appendAuditLog, AUDIT_DIR, AUDIT_FILE }",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L25",
+      "id": "tests_audit_logger_test_appendauditlog_audit_dir_audit_file",
+      "community": 5,
+      "norm_label": "{ appendauditlog, audit_dir, audit_file }"
+    },
+    {
+      "label": "lines",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L34",
+      "id": "tests_audit_logger_test_lines",
+      "community": 5,
+      "norm_label": "lines"
+    },
+    {
+      "label": "entry",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L37",
+      "id": "tests_audit_logger_test_entry",
+      "community": 5,
+      "norm_label": "entry"
+    },
+    {
+      "label": "{ appendAuditLog, AUDIT_FILE }",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L51",
+      "id": "tests_audit_logger_test_appendauditlog_audit_file",
+      "community": 5,
+      "norm_label": "{ appendauditlog, audit_file }"
+    },
+    {
+      "label": "{ appendAuditLog }",
+      "file_type": "code",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L68",
+      "id": "tests_audit_logger_test_appendauditlog",
+      "community": 5,
+      "norm_label": "{ appendauditlog }"
+    },
+    {
+      "label": "switch.test.js",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L1",
+      "id": "tests_switch_test_js",
+      "community": 6,
+      "norm_label": "switch.test.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L1",
+      "id": "tests_switch_test_fs",
+      "community": 6,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L2",
+      "id": "tests_switch_test_path",
+      "community": 6,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L3",
+      "id": "tests_switch_test_os",
+      "community": 6,
+      "norm_label": "os"
+    },
+    {
+      "label": "TEST_HOME",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L5",
+      "id": "tests_switch_test_test_home",
+      "community": 6,
+      "norm_label": "test_home"
+    },
+    {
+      "label": "claudeDir",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L103",
+      "id": "tests_switch_test_claudedir",
+      "community": 6,
+      "norm_label": "claudedir"
+    },
+    {
+      "label": "content",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L121",
+      "id": "tests_switch_test_content",
+      "community": 6,
+      "norm_label": "content"
+    },
+    {
+      "label": "consoleSpy",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L184",
+      "id": "tests_switch_test_consolespy",
+      "community": 6,
+      "norm_label": "consolespy"
+    },
+    {
+      "label": "status.test.js",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L1",
+      "id": "tests_status_test_js",
+      "community": 7,
+      "norm_label": "status.test.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L1",
+      "id": "tests_status_test_fs",
+      "community": 7,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L2",
+      "id": "tests_status_test_path",
+      "community": 7,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L3",
+      "id": "tests_status_test_os",
+      "community": 7,
+      "norm_label": "os"
+    },
+    {
+      "label": "TEST_HOME",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L5",
+      "id": "tests_status_test_test_home",
+      "community": 7,
+      "norm_label": "test_home"
+    },
+    {
+      "label": "loadStatus()",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L7",
+      "id": "tests_status_test_loadstatus",
+      "community": 7,
+      "norm_label": "loadstatus()"
+    },
+    {
+      "label": "activeModelPath",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L43",
+      "id": "tests_status_test_activemodelpath",
+      "community": 7,
+      "norm_label": "activemodelpath"
+    },
+    {
+      "label": "{ statusCommand }",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L47",
+      "id": "tests_status_test_statuscommand",
+      "community": 7,
+      "norm_label": "{ statuscommand }"
+    },
+    {
+      "label": "logSpy",
+      "file_type": "code",
+      "source_file": "tests/status.test.js",
+      "source_location": "L61",
+      "id": "tests_status_test_logspy",
+      "community": 7,
+      "norm_label": "logspy"
+    },
+    {
+      "label": "proxy-client.js",
+      "file_type": "code",
+      "source_file": "lib/proxy-client.js",
+      "source_location": "L1",
+      "id": "lib_proxy_client_js",
+      "community": 0,
+      "norm_label": "proxy-client.js"
+    },
+    {
+      "label": "http",
+      "file_type": "code",
+      "source_file": "lib/proxy-client.js",
+      "source_location": "L1",
+      "id": "lib_proxy_client_http",
+      "community": 0,
+      "norm_label": "http"
+    },
+    {
+      "label": "getProxyStatus()",
+      "file_type": "code",
+      "source_file": "lib/proxy-client.js",
+      "source_location": "L5",
+      "id": "lib_proxy_client_getproxystatus",
+      "community": 0,
+      "norm_label": "getproxystatus()"
+    },
+    {
+      "label": "config-manager.js",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L1",
+      "id": "lib_config_manager_js",
+      "community": 2,
+      "norm_label": "config-manager.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L1",
+      "id": "lib_config_manager_fs",
+      "community": 2,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L2",
+      "id": "lib_config_manager_path",
+      "community": 2,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L3",
+      "id": "lib_config_manager_os",
+      "community": 2,
+      "norm_label": "os"
+    },
+    {
+      "label": "CONFIG_DIR",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L5",
+      "id": "lib_config_manager_config_dir",
+      "community": 2,
+      "norm_label": "config_dir"
+    },
+    {
+      "label": "CONFIG_FILE",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L6",
+      "id": "lib_config_manager_config_file",
+      "community": 2,
+      "norm_label": "config_file"
+    },
+    {
+      "label": "ensureConfigDir()",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L8",
+      "id": "lib_config_manager_ensureconfigdir",
+      "community": 2,
+      "norm_label": "ensureconfigdir()"
+    },
+    {
+      "label": "readConfig()",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L14",
+      "id": "lib_config_manager_readconfig",
+      "community": 2,
+      "norm_label": "readconfig()"
+    },
+    {
+      "label": "writeConfig()",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L37",
+      "id": "lib_config_manager_writeconfig",
+      "community": 2,
+      "norm_label": "writeconfig()"
+    },
+    {
+      "label": "getProvider()",
+      "file_type": "code",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L58",
+      "id": "lib_config_manager_getprovider",
+      "community": 2,
+      "norm_label": "getprovider()"
+    },
+    {
+      "label": "audit-logger.js",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L1",
+      "id": "lib_audit_logger_js",
+      "community": 3,
+      "norm_label": "audit-logger.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L1",
+      "id": "lib_audit_logger_fs",
+      "community": 3,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L2",
+      "id": "lib_audit_logger_path",
+      "community": 3,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L3",
+      "id": "lib_audit_logger_os",
+      "community": 3,
+      "norm_label": "os"
+    },
+    {
+      "label": "AUDIT_DIR",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L5",
+      "id": "lib_audit_logger_audit_dir",
+      "community": 3,
+      "norm_label": "audit_dir"
+    },
+    {
+      "label": "AUDIT_FILE",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L6",
+      "id": "lib_audit_logger_audit_file",
+      "community": 3,
+      "norm_label": "audit_file"
+    },
+    {
+      "label": "ensureAuditDir()",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L8",
+      "id": "lib_audit_logger_ensureauditdir",
+      "community": 3,
+      "norm_label": "ensureauditdir()"
+    },
+    {
+      "label": "appendAuditLog()",
+      "file_type": "code",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L14",
+      "id": "lib_audit_logger_appendauditlog",
+      "community": 3,
+      "norm_label": "appendauditlog()"
+    },
+    {
+      "label": "switch.js",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L1",
+      "id": "commands_switch_js",
+      "community": 3,
+      "norm_label": "switch.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L1",
+      "id": "commands_switch_fs",
+      "community": 3,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L2",
+      "id": "commands_switch_path",
+      "community": 3,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L3",
+      "id": "commands_switch_os",
+      "community": 3,
+      "norm_label": "os"
+    },
+    {
+      "label": "{ getProxyStatus }",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L4",
+      "id": "commands_switch_getproxystatus",
+      "community": 3,
+      "norm_label": "{ getproxystatus }"
+    },
+    {
+      "label": "{ appendAuditLog }",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L5",
+      "id": "commands_switch_appendauditlog",
+      "community": 3,
+      "norm_label": "{ appendauditlog }"
+    },
+    {
+      "label": "chalk",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L6",
+      "id": "commands_switch_chalk",
+      "community": 3,
+      "norm_label": "chalk"
+    },
+    {
+      "label": "ACTIVE_MODEL_FILE",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L8",
+      "id": "commands_switch_active_model_file",
+      "community": 3,
+      "norm_label": "active_model_file"
+    },
+    {
+      "label": "switchCommand()",
+      "file_type": "code",
+      "source_file": "commands/switch.js",
+      "source_location": "L10",
+      "id": "commands_switch_switchcommand",
+      "community": 3,
+      "norm_label": "switchcommand()"
+    },
+    {
+      "label": "auth.js",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L1",
+      "id": "commands_auth_js",
+      "community": 2,
+      "norm_label": "auth.js"
+    },
+    {
+      "label": "{ getOrgSecret }",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L1",
+      "id": "commands_auth_getorgsecret",
+      "community": 2,
+      "norm_label": "{ getorgsecret }"
+    },
+    {
+      "label": "{ readConfig, writeConfig }",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L2",
+      "id": "commands_auth_readconfig_writeconfig",
+      "community": 2,
+      "norm_label": "{ readconfig, writeconfig }"
+    },
+    {
+      "label": "{ appendAuditLog }",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L3",
+      "id": "commands_auth_appendauditlog",
+      "community": 2,
+      "norm_label": "{ appendauditlog }"
+    },
+    {
+      "label": "chalk",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L4",
+      "id": "commands_auth_chalk",
+      "community": 2,
+      "norm_label": "chalk"
+    },
+    {
+      "label": "PROVIDER_SECRETS",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L6",
+      "id": "commands_auth_provider_secrets",
+      "community": 2,
+      "norm_label": "provider_secrets"
+    },
+    {
+      "label": "authCommand()",
+      "file_type": "code",
+      "source_file": "commands/auth.js",
+      "source_location": "L13",
+      "id": "commands_auth_authcommand",
+      "community": 2,
+      "norm_label": "authcommand()"
+    },
+    {
+      "label": "status.js",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L1",
+      "id": "commands_status_js",
+      "community": 0,
+      "norm_label": "status.js"
+    },
+    {
+      "label": "fs",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L1",
+      "id": "commands_status_fs",
+      "community": 0,
+      "norm_label": "fs"
+    },
+    {
+      "label": "path",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L2",
+      "id": "commands_status_path",
+      "community": 0,
+      "norm_label": "path"
+    },
+    {
+      "label": "os",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L3",
+      "id": "commands_status_os",
+      "community": 0,
+      "norm_label": "os"
+    },
+    {
+      "label": "{ getProxyStatus }",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L4",
+      "id": "commands_status_getproxystatus",
+      "community": 0,
+      "norm_label": "{ getproxystatus }"
+    },
+    {
+      "label": "{ readConfig }",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L5",
+      "id": "commands_status_readconfig",
+      "community": 0,
+      "norm_label": "{ readconfig }"
+    },
+    {
+      "label": "chalk",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L6",
+      "id": "commands_status_chalk",
+      "community": 0,
+      "norm_label": "chalk"
+    },
+    {
+      "label": "ACTIVE_MODEL_FILE",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L8",
+      "id": "commands_status_active_model_file",
+      "community": 0,
+      "norm_label": "active_model_file"
+    },
+    {
+      "label": "statusCommand()",
+      "file_type": "code",
+      "source_file": "commands/status.js",
+      "source_location": "L10",
+      "id": "commands_status_statuscommand",
+      "community": 0,
+      "norm_label": "statuscommand()"
+    },
+    {
+      "label": "loadAuth()",
+      "file_type": "code",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L14",
+      "community": 4,
+      "norm_label": "loadauth()",
+      "id": "tests_auth_test_loadauth"
+    },
+    {
+      "label": "switchModule",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L28",
+      "community": 6,
+      "norm_label": "switchmodule",
+      "id": "tests_switch_test_switchmodule"
+    },
+    {
+      "label": "auditSpy",
+      "file_type": "code",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L120",
+      "community": 6,
+      "norm_label": "auditspy",
+      "id": "tests_switch_test_auditspy"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_eventemitter"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_http"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L78",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_calls"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L81",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_res"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_req"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "lib_proxy_client_js"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_getproxystatus_proxy_url"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/proxy-client.test.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_proxy_client_test_js",
+      "target": "tests_proxy_client_test_getproxystatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_test_home"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_loadconfigmanager"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_createproviders"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_readconfig_config_dir_config_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L121",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_config"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L46",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_existing"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_writeconfig_config_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_written"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L99",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_writeconfig_config_dir_config_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L102",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_oldconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L80",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_newconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_writeconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L105",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_writespy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/config-manager.test.js",
+      "source_location": "L119",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_config_manager_test_js",
+      "target": "tests_config_manager_test_getprovider_config_dir_config_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_test_home"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_createdefaultconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L32",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_mockconsole"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L208",
+      "weight": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "commands_auth_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L208",
+      "weight": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "commands_auth_authcommand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L206",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_authcommand"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L209",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_githubsecrets"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L211",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_secrets"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L223",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_configfile"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L103",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_config"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L177",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "lib_audit_logger_js"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L177",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_auditlogger"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L178",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_appendspy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L184",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_consolespy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/auth.test.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_auth_test_js",
+      "target": "tests_auth_test_loadauth"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_test"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_assert"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_loadauditloggerwithhome"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L65",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_homedir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_appendauditlog_audit_dir_audit_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L56",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_lines"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_entry"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L51",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_appendauditlog_audit_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/audit-logger.test.js",
+      "source_location": "L68",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_audit_logger_test_js",
+      "target": "tests_audit_logger_test_appendauditlog"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_test_home"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L95",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_claudedir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L141",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_content"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L168",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_consolespy"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L28",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "commands_switch_js"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L28",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_switchmodule"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/switch.test.js",
+      "source_location": "L120",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_switch_test_js",
+      "target": "tests_switch_test_auditspy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_test_home"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_loadstatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_activemodelpath"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_statuscommand"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/status.test.js",
+      "source_location": "L122",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_status_test_js",
+      "target": "tests_status_test_logspy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/proxy-client.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_proxy_client_js",
+      "target": "lib_proxy_client_http"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/proxy-client.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_proxy_client_js",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "lib_proxy_client_js"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "lib_proxy_client_js"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/switch.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "commands_switch_switchcommand",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/status.js",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "commands_status_statuscommand",
+      "target": "lib_proxy_client_getproxystatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_config_dir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_config_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_ensureconfigdir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_writeconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L58",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_js",
+      "target": "lib_config_manager_getprovider"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "lib_config_manager_js"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "lib_config_manager_js"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_readconfig",
+      "target": "lib_config_manager_ensureconfigdir"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L38",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_writeconfig",
+      "target": "lib_config_manager_ensureconfigdir"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/config-manager.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_config_manager_getprovider",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/auth.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "source": "commands_auth_authcommand",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/status.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "commands_status_statuscommand",
+      "target": "lib_config_manager_readconfig"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "lib_config_manager_writeconfig"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/auth.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "commands_auth_authcommand",
+      "target": "lib_config_manager_writeconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_audit_dir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_audit_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_ensureauditdir"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_js",
+      "target": "lib_audit_logger_appendauditlog"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "lib_audit_logger_js"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "lib_audit_logger_js"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/audit-logger.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "lib_audit_logger_appendauditlog",
+      "target": "lib_audit_logger_ensureauditdir"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "lib_audit_logger_appendauditlog"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "lib_audit_logger_appendauditlog"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/switch.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "commands_switch_switchcommand",
+      "target": "lib_audit_logger_appendauditlog"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "commands/auth.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "commands_auth_authcommand",
+      "target": "lib_audit_logger_appendauditlog"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_getproxystatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_appendauditlog"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_chalk"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_active_model_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/switch.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_switch_js",
+      "target": "commands_switch_switchcommand"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_getorgsecret"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_readconfig_writeconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_appendauditlog"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_chalk"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_provider_secrets"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/auth.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_auth_js",
+      "target": "commands_auth_authcommand"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_fs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_path"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_os"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_getproxystatus"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_readconfig"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_chalk"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_active_model_file"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "commands/status.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "commands_status_js",
+      "target": "commands_status_statuscommand"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "617611ca5ab8c4bd727adb0b693c25ad22819f0c"
+}

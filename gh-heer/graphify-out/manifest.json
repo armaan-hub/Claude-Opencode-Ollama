@@ -1,0 +1,54 @@
+{
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/jest.config.js": {
+    "mtime": 1778730152.852202,
+    "hash": "e089388b29715dd5e3e13310e972c419"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/proxy-client.test.js": {
+    "mtime": 1778729982.8752463,
+    "hash": "889a573e0479a5805efe37e3bb05b68c"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/config-manager.test.js": {
+    "mtime": 1778729897.097643,
+    "hash": "f1c9fa21b204a6bb375be23d9683a870"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/auth.test.js": {
+    "mtime": 1778730238.97189,
+    "hash": "b360454defe8751deaf13b70c0f58bcd"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/audit-logger.test.js": {
+    "mtime": 1778729901.9351895,
+    "hash": "5264bdf2225989b67f4bcd464d9fbbdd"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/switch.test.js": {
+    "mtime": 1778730250.8223462,
+    "hash": "a0eb231729ea0293e27b2e16d93dafe3"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/tests/status.test.js": {
+    "mtime": 1778730199.1064289,
+    "hash": "07851e2664b1c160d18d92b25b090728"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/lib/proxy-client.js": {
+    "mtime": 1778729941.2047858,
+    "hash": "51ae1e51f28d0e55113557ccf6705f5d"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/lib/config-manager.js": {
+    "mtime": 1778729925.5386295,
+    "hash": "8a710aa742c3b8cfe4b0ce14564eac3e"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/lib/audit-logger.js": {
+    "mtime": 1778729913.7871785,
+    "hash": "f8417629e512f3b4a30215fa86d8d659"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/commands/switch.js": {
+    "mtime": 1778730120.242732,
+    "hash": "30cede68086e0e35cbfebe8f3481f3cb"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/commands/auth.js": {
+    "mtime": 1778730134.5875282,
+    "hash": "6340e0843cfca31ba62c082453fc1efc"
+  },
+  "/Users/armaan/.worktrees/gh-heer-plugin/gh-heer/commands/status.js": {
+    "mtime": 1778730253.9953558,
+    "hash": "c05fba03a59a46b6203b3924d3732180"
+  }
+}
