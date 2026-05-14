@@ -1,0 +1,32 @@
+#!/bin/bash
+# Called by Claude Code's /model command. Handles all logic outside the AI.
+# Usage: model-open [arg]  where arg is: blank/status, <model-id>, or "clear"
+
+ARG="${*:-}"
+ACTIVE="$HOME/.claude/active-model"
+CUR=$([ -f "$ACTIVE" ] && cat "$ACTIVE" | tr -d '\n' || echo "none")
+
+case "$ARG" in
+  ""|"status")
+    echo "Active model: $CUR"
+    echo ""
+    # Open fzf picker in new Terminal window
+    osascript \
+      -e 'tell application "Terminal"' \
+      -e '  set newTab to do script "source ~/.zshrc 2>/dev/null; ~/bin/model; sleep 0.5; exit"' \
+      -e '  set frontmost to true' \
+      -e 'end tell' 2>/dev/null \
+    && echo "🪟  Picker opened in Terminal window (arrow keys → Enter to select)" \
+    || echo "⚠️  Run in a terminal:  model"
+    ;;
+  "clear")
+    rm -f "$ACTIVE"
+    echo "✅ Model override cleared."
+    ;;
+  *)
+    mkdir -p "$(dirname "$ACTIVE")"
+    echo "$ARG" > "$ACTIVE"
+    echo "✅ Switched to: $ARG"
+    echo "   Takes effect on your next message."
+    ;;
+esac
