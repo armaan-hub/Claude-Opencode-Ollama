@@ -443,7 +443,9 @@ function anthropicToOpenAI(body) {
     model: body.model,
     messages,
     max_tokens: body.max_tokens,
-    stream: body.stream || false,
+    // Only include stream:true when explicitly requested.
+    // GitHub Copilot returns 403 when stream:false is present.
+    ...(body.stream ? { stream: true } : {}),
   };
 
   if (body.temperature !== undefined) result.temperature = body.temperature;
@@ -1521,7 +1523,7 @@ const server = http.createServer((req, res) => {
     }
     const testReq = https.request({
       hostname: COPILOT_HOST, port: 443, path: '/models', method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}`, 'Editor-Version': COPILOT_EDITOR_VERSION, 'User-Agent': 'universal-llm-proxy/2.0' },
+      headers: { 'Authorization': `Bearer ${token}`, 'Editor-Version': COPILOT_EDITOR_VERSION, 'User-Agent': COPILOT_EDITOR_VERSION, 'Copilot-Integration-Id': COPILOT_INTEGRATION_ID },
     }, testRes => {
       let data = '';
       testRes.on('data', d => data += d);
@@ -1554,7 +1556,7 @@ const server = http.createServer((req, res) => {
   if (method === 'POST' && reqPath === '/api/copilot/login') {
     try {
       const { spawn } = require('child_process');
-      spawn('gh', ['auth', 'login', '--hostname', 'github.com', '--web'], {
+      spawn('gh', ['auth', 'login', '--hostname', 'github.com', '--web', '--scopes', 'copilot'], {
         detached: true,
         stdio: 'ignore',
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
