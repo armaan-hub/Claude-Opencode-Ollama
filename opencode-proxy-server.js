@@ -56,17 +56,14 @@ const COPILOT_MODELS = [
   'copilot/gpt-5.4',
   'copilot/gpt-5.2',
   'copilot/gpt-5-mini',
-  'copilot/gpt-4.1',
   'copilot/grok-code-fast-1',
 ];
 
 // Rate multipliers match GitHub Copilot CLI's model selector (0 = free, 1 = standard, etc.)
 const COPILOT_RATE_MULTIPLIERS = {
-  'copilot/gpt-5.5':            7.5,
   'copilot/gpt-5.4':            1,
   'copilot/gpt-5.2':            1,
   'copilot/gpt-5-mini':         0,
-  'copilot/gpt-4.1':            0,
   'copilot/claude-sonnet-4.6':  1,
   'copilot/claude-sonnet-4.5':  1,
   'copilot/claude-haiku-4.5':   0.33,
@@ -154,7 +151,7 @@ const DEFAULT_CONFIG = {
     'gpt-4.1', 'codex-mini-latest',
   ],
   // Fallback model used when no ~/.claude/active-model file exists
-  defaultModel: 'copilot/gpt-4.1',
+  defaultModel: 'copilot/gpt-5-mini',
 };
 
 function loadConfig() {
@@ -263,6 +260,7 @@ const REQUEST_COUNTS = {
   openrouter: 0,
   ollama: 0,
   opencode: 0,
+  anthropic: 0,
 };
 let _oauthState = ''; // CSRF state for GitHub OAuth flow
 
@@ -485,10 +483,16 @@ function anthropicToOpenAI(body) {
     }
   }
 
+  // gpt-5.x (5.2, 5.3, 5.4, 5.5) and o-series models use max_completion_tokens
+  const modelSuffix = (body.model || '').split('/').pop();
+  const usesMaxCompletionTokens = /^gpt-5\.\d|^o[134]\b/.test(modelSuffix);
+
   const result = {
     model: body.model,
     messages,
-    max_tokens: body.max_tokens,
+    ...(usesMaxCompletionTokens
+      ? { max_completion_tokens: body.max_tokens }
+      : { max_tokens: body.max_tokens }),
     // Only include stream:true when explicitly requested.
     // GitHub Copilot returns 403 when stream:false is present.
     ...(body.stream ? { stream: true } : {}),
@@ -1996,7 +2000,9 @@ const server = http.createServer((req, res) => {
           const openaiModelsList = OPENAI_API_KEY
             ? [...OPENAI_MODELS].map(id => ({ id: `openai/${id}`, object: 'model', owned_by: 'openai', created: 0, context_length: 131072 }))
             : [];
-          const anthropicModelsList = ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }));
+          const anthropicModelsList = ANTHROPIC_DIRECT_API_KEY
+            ? ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }))
+            : [];
           const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList, ...anthropicModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));

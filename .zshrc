@@ -119,9 +119,9 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # opencode
 export PATH=/Users/armaan/.opencode/bin:$PATH
 
-# LiteLLM proxy for Claude Code (OpenCode Go models)
-export ANTHROPIC_API_KEY="sk-claude-code"
-export ANTHROPIC_BASE_URL="http://localhost:4000"
+# Proxy routes all Claude Code requests through ~/opencode-proxy-server.js
+# ANTHROPIC_BASE_URL is set in ~/.claude/settings.json (scoped to Claude Code only)
+# Do NOT export ANTHROPIC_API_KEY here — it conflicts with OAuth login
 
 # run-claude-opencode — pick mode + model, launch Claude Code
 # Usage: run-claude-opencode
