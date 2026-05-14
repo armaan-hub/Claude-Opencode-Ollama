@@ -1,29 +1,18 @@
 ---
-allowed-tools: Bash(python3 *)
-description: List or set active LLM model. Usage: /model  or  /model <id>  or  /model clear
+allowed-tools: Bash(python3 *), Bash(osascript *)
+description: Open interactive model picker (zero-token TUI). Usage: /model  or  /model <id>  or  /model clear
 ---
 
-Run this Python script and show its output verbatim. Do NOT invoke any skills.
+Run this and show its output verbatim. Do NOT invoke any skills or superpowers.
 
 ```bash
 python3 - "$ARGUMENTS" <<'PYEOF'
-import sys, json, os, urllib.request
+import sys, os, subprocess
 
 ACTIVE = os.path.expanduser("~/.claude/active-model")
-PROXY  = "http://localhost:4001"
-arg    = sys.argv[1].strip() if len(sys.argv) > 1 else ""
+arg = sys.argv[1].strip() if len(sys.argv) > 1 else ""
 
-def read_active():
-    return open(ACTIVE).read().strip() if os.path.exists(ACTIVE) else "none"
-
-def fetch_models():
-    try:
-        with urllib.request.urlopen(f"{PROXY}/v1/models", timeout=4) as r:
-            return json.loads(r.read())
-    except Exception:
-        return None
-
-# handle write actions
+# Handle direct switch or clear
 if arg == "clear":
     if os.path.exists(ACTIVE):
         os.remove(ACTIVE)
@@ -35,41 +24,26 @@ if arg and arg != "status":
     with open(ACTIVE, "w") as f:
         f.write(arg)
     print(f"✅ Switched to: {arg}")
-    print("   Active on your next message.")
+    print("   Takes effect on your next message.")
     sys.exit(0)
 
-# display model list
-cur  = read_active()
-data = fetch_models()
+# No arg — show current and open interactive picker in new Terminal window
+cur = open(ACTIVE).read().strip() if os.path.exists(ACTIVE) else "none"
+print(f"Active model: {cur}")
+print()
+print("🪟  Opening interactive model picker in a new Terminal window...")
+print("   Select a model with arrow keys, press Enter to confirm, Esc to cancel.")
 
-print(f"Active model: {cur}\n")
+# Open ~/bin/model in a new macOS Terminal window
+script = '''tell application "Terminal"
+    set newTab to do script "source ~/.zshrc 2>/dev/null; ~/bin/model; sleep 0.5; exit"
+    set frontmost to true
+end tell'''
 
-if not data:
-    print(f"⚠️  Proxy unreachable at {PROXY}")
-    print("   Start proxy: node ~/opencode-proxy-server.js &")
-    sys.exit(1)
-
-by_owner = {}
-for m in data.get("data", []):
-    mid   = m.get("id", "")
-    owner = m.get("owned_by", "other")
-    rate  = m.get("x_copilot_rate")
-    if mid:
-        by_owner.setdefault(owner, []).append((mid, rate))
-
-for owner, models in by_owner.items():
-    print(f"[{owner.upper()}]")
-    for mid, rate in models:
-        if rate == 0:
-            rs = " [FREE]"
-        elif rate is not None and rate != 1:
-            rs = f" [{rate}x]"
-        else:
-            rs = ""
-        marker = "  ← active" if mid == cur else ""
-        print(f"  {mid}{rs}{marker}")
+result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+if result.returncode != 0:
     print()
-
-print("Usage:  /model <id>   to switch   |   /model clear   to remove override")
+    print("Could not open Terminal automatically.")
+    print("Run manually in a terminal:  model")
 PYEOF
 ```
