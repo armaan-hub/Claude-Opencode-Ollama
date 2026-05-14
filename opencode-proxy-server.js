@@ -2143,6 +2143,25 @@ const server = http.createServer((req, res) => {
       }
 
       forwardPromise.then(upstream => {
+        // Intercept GitHub Copilot rate-limit 403 and return a friendly error
+        const forbidden = upstream.headers['x-endpoint-client-forbidden'] || '';
+        if (upstream.statusCode === 403 && forbidden.includes('tpm:')) {
+          const modelName = forbidden.split(':')[1] || model;
+          const errBody = JSON.stringify({
+            type: 'error',
+            error: {
+              type: 'rate_limit_error',
+              message: `⚠️ GitHub Copilot rate limit hit for model "${modelName}". Wait ~60 seconds and try again. (This is GitHub's TPM limit — not a permanent block.)`,
+            },
+          });
+          res.writeHead(429, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          });
+          res.end(errBody);
+          upstream.resume();
+          return;
+        }
         const statusCode = upstream.statusCode;
         console.log(`[${new Date().toISOString()}] upstream ${model} → HTTP ${statusCode}`);
 
