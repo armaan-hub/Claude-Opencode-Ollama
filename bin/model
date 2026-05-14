@@ -24,7 +24,8 @@ set_model() {
   mkdir -p "$(dirname "$ACTIVE")"
   printf "%s" "$id" > "$ACTIVE"
   echo "✅ Switched to: $id"
-  echo "   Takes effect on your next Claude Code message."
+  echo "   → Your NEXT message in Claude Code will use this model"
+  echo "   → No restart needed - change is immediate"
 }
 
 clear_model() {
@@ -94,7 +95,8 @@ for m in data.get('data', []):
     --header-first \
     --bind "ctrl-c:abort,esc:abort" \
     --preview="" \
-    --no-preview 2>/dev/null)
+    --no-preview \
+    < /dev/tty > /dev/tty 2>/dev/null)
 
   if [[ -z "$selected" ]]; then
     echo "Cancelled — no change."
@@ -120,19 +122,54 @@ by_owner = {}
 for m in data.get('data', []):
     mid = m.get('id',''); owner = m.get('owned_by','other'); rate = m.get('x_copilot_rate')
     if mid: by_owner.setdefault(owner, []).append((mid, rate))
-print(f'Active: {cur}\n')
+print(f'Active model: {cur} (✓)\n')
 for owner, models in by_owner.items():
     print(f'[{owner.upper()}]')
     for mid, rate in models:
         rs = ' [FREE]' if rate==0 else (f' [{rate}x]' if rate is not None and rate!=1 else '')
-        mk = '  <- active' if mid==cur else ''
-        print(f'  {mid}{rs}{mk}')
+        mk = '✓' if mid==cur else ' '
+        print(f'  {mk} {mid}{rs}')
     print()
+" <<< "$data"
+}
+
+inline_models() {
+  local data; data=$(fetch_models_json)
+  [[ -z "$data" ]] && echo "⚠️  Proxy unreachable at $PROXY" && exit 1
+  local cur; cur=$(current_model)
+  python3 -c "
+import sys, json
+cur = '$cur'
+data = json.loads(sys.stdin.read())
+models = []
+for m in data.get('data', []):
+    mid = m.get('id', '')
+    owner = m.get('owned_by', 'other')
+    rate = m.get('x_copilot_rate')
+    if not mid:
+        continue
+    if rate == 0:
+        rs = ' [FREE]'
+    elif rate is not None and rate != 1:
+        rs = f' [{rate}x]'
+    else:
+        rs = ''
+    models.append((mid, owner, rs))
+
+print('Inline model list (text-only)')
+print(f'Current active model: {cur}')
+print()
+for i, (mid, owner, rs) in enumerate(models, start=1):
+    mark = '✓' if mid == cur else ' '
+    print(f'{i:>2}. {mark} {mid}{rs} ({owner})')
+print()
+print(\"In Claude Code: say 'switch to model N' or 'set model [model-id]'\")
 " <<< "$data"
 }
 
 case "${1:-}" in
   list|ls)    list_models ;;
+  inline)     inline_models ;;
   set)        set_model "$2" ;;
   clear)      clear_model ;;
   status)     echo "Active model: $(current_model)" ;;
@@ -140,6 +177,7 @@ case "${1:-}" in
     echo "model — zero-token model picker"
     echo "  model              interactive TUI picker"
     echo "  model list         show all models"
+    echo "  model inline       show numbered text list (no fzf)"
     echo "  model set <id>     switch directly"
     echo "  model clear        remove override"
     echo "  model status       show current"

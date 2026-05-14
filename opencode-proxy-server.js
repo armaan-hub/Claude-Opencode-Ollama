@@ -52,7 +52,6 @@ const COPILOT_MODELS = [
   'copilot/claude-sonnet-4.6',
   'copilot/claude-sonnet-4.5',
   'copilot/claude-haiku-4.5',
-  'copilot/claude-opus-4.5',
   'copilot/gpt-5.4',
   'copilot/gpt-5.2',
   'copilot/gpt-5-mini',
@@ -69,7 +68,6 @@ const COPILOT_RATE_MULTIPLIERS = {
   'copilot/claude-haiku-4.5':   0.33,
   'copilot/claude-opus-4.7':    15,
   'copilot/claude-opus-4.6-1m': 15,
-  'copilot/claude-opus-4.5':    1,
   'copilot/grok-code-fast-1':   1,
 };
 
@@ -1576,7 +1574,7 @@ const server = http.createServer((req, res) => {
     }
     const testReq = https.request({
       hostname: COPILOT_HOST, port: 443, path: '/models', method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}`, 'Editor-Version': COPILOT_EDITOR_VERSION, 'User-Agent': COPILOT_EDITOR_VERSION, 'Copilot-Integration-Id': COPILOT_INTEGRATION_ID },
+      headers: { 'Authorization': `Bearer ${token}`, 'Editor-Version': COPILOT_EDITOR_VERSION, 'User-Agent': 'universal-llm-proxy/2.0', 'Copilot-Integration-Id': COPILOT_INTEGRATION_ID },
     }, testRes => {
       let data = '';
       testRes.on('data', d => data += d);
