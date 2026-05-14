@@ -75,15 +75,7 @@ case "$ARG" in
   ""|"status")
     echo "Active model: $CUR"
     echo ""
-    if osascript \
-      -e 'tell application "Terminal"' \
-      -e '  set newTab to do script "source ~/.zshrc 2>/dev/null; ~/bin/model; sleep 0.5; exit"' \
-      -e '  set frontmost to true' \
-      -e 'end tell' 2>/dev/null; then
-      echo "🪟  Picker opened in Terminal window (arrow keys → Enter to select)"
-    else
-      show_model_list
-    fi
+    show_model_list
     ;;
   "clear")
     rm -f "$ACTIVE"
