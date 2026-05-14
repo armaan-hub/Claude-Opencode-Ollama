@@ -369,8 +369,9 @@ function getProviderForModel(modelId) {
 function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl, extraHeaders = {}, providerName = null) {
   return new Promise((resolve, reject) => {
     const proto = ssl ? https : http;
-    // For GitHub Copilot, use editor User-Agent to avoid ToS-based rejection
-    const userAgent = providerName === 'GitHub Copilot' ? COPILOT_EDITOR_VERSION : 'universal-llm-proxy/2.0';
+    // NOTE: Do NOT use vscode/x.y.z as User-Agent — GitHub Copilot API blocks requests
+    // that set User-Agent to match the Editor-Version header (triggers ToS enforcement).
+    // Use a generic proxy agent for all providers; Editor-Version header handles editor ID.
     const options = {
       hostname: host,
       port,
@@ -379,7 +380,7 @@ function forwardToProvider(reqPath, method, headers, body, host, port, base, ssl
       headers: {
         'Content-Type':   'application/json',
         'Authorization':  headers.authorization || `Bearer ${headers['x-api-key'] || ''}`,
-        'User-Agent':     userAgent,
+        'User-Agent':     'universal-llm-proxy/2.0',
         'HTTP-Referer':   'https://github.com/anthropics/claude-code',
         'X-Title':        'Claude Code',
         ...extraHeaders,
