@@ -153,6 +153,8 @@ const DEFAULT_CONFIG = {
     'gpt-4o', 'gpt-4o-mini', 'o3-mini', 'o4-mini',
     'gpt-4.1', 'codex-mini-latest',
   ],
+  // Fallback model used when no ~/.claude/active-model file exists
+  defaultModel: 'copilot/gpt-4.1',
 };
 
 function loadConfig() {
@@ -225,10 +227,11 @@ function rebuildSets() {
   GEMINI_API_KEY    = typeof CFG.geminiApiKey    === 'string' ? CFG.geminiApiKey    : DEFAULT_CONFIG.geminiApiKey;
   OPENAI_API_KEY    = typeof CFG.openaiApiKey    === 'string' ? CFG.openaiApiKey    : DEFAULT_CONFIG.openaiApiKey;
   ANTHROPIC_DIRECT_API_KEY = typeof CFG.anthropicApiKey === 'string' ? CFG.anthropicApiKey : '';
+  DEFAULT_MODEL            = typeof CFG.defaultModel    === 'string' ? CFG.defaultModel    : DEFAULT_CONFIG.defaultModel;
 }
 
 // GEMINI_MODELS / OPENAI_MODELS: used for /v1/models listing. Routing uses startsWith() prefix matching.
-let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_DIRECT_API_KEY;
+let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_DIRECT_API_KEY, DEFAULT_MODEL;
 rebuildSets();
 
 function getEndpoint(modelId) {
@@ -2039,7 +2042,7 @@ const server = http.createServer((req, res) => {
       // ── Hot-swap model override ───────────────────────────────────────────
       // Only override "bare" default model names (e.g. claude-opus-4-7).
       // If model already contains '/', user made an explicit /model selection — honour it.
-      const activeModel = readActiveModel();
+      const activeModel = readActiveModel() || DEFAULT_MODEL;
       const isExplicitProviderModel = (anthropicBody.model || '').includes('/');
       if (activeModel && !isExplicitProviderModel) {
         console.log(`[MODEL OVERRIDE] ${anthropicBody.model} → ${activeModel}`);

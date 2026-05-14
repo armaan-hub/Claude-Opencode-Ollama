@@ -90,6 +90,44 @@ case "$ARG" in
     echo "✅ Model override cleared."
     ;;
   *)
+    # If no provider prefix, try to fuzzy-match against available models
+    if [[ "$ARG" != *"/"* ]]; then
+      MODELS_JSON=$(curl -s --max-time 5 "$PROXY/v1/models" 2>/dev/null)
+      MATCH=$(QUERY="$ARG" MODELS_JSON="$MODELS_JSON" python3 << 'FUZZY'
+import json, sys, os
+arg = os.environ.get('QUERY', '').lower()
+raw = os.environ.get('MODELS_JSON', '')
+try:
+    data = json.loads(raw)
+except Exception:
+    sys.exit(1)
+models = [m['id'] for m in data.get('data', [])]
+norm = lambda s: s.lower().replace('.', '-').replace('_', '-')
+# Exact suffix match (e.g. "claude-sonnet-4.6" matches "copilot/claude-sonnet-4.6")
+for mid in models:
+    if norm(mid.split('/')[-1]) == norm(arg):
+        print(mid); sys.exit(0)
+# Substring match
+for mid in models:
+    if norm(arg) in norm(mid):
+        print(mid); sys.exit(0)
+sys.exit(1)
+FUZZY
+)
+      if [ -n "$MATCH" ]; then
+        echo "⚠️  '$ARG' → auto-matched to '$MATCH'"
+        ARG="$MATCH"
+      else
+        echo "❌ '$ARG' needs a provider prefix (e.g. copilot/claude-sonnet-4.6)"
+        echo ""
+        echo "   Common models:"
+        echo "     copilot/gpt-4.1          copilot/claude-sonnet-4.6"
+        echo "     copilot/claude-haiku-4.5  opencode/deepseek-v4-flash"
+        echo ""
+        echo "   Use /model (no args) to see all available models."
+        exit 1
+      fi
+    fi
     mkdir -p "$(dirname "$ACTIVE")"
     echo "$ARG" > "$ACTIVE"
     echo "✅ Switched to: $ARG"
