@@ -67,7 +67,7 @@ except Exception as e:
     print(f'  (error parsing model list: {e})')
 PYEOF
   echo "💡 Switch model: /model <model-id>"
-  echo "   Example:  /model copilot/gpt-4.1"
+  echo "   Example:  /model copilot/gpt-5-mini"
   echo "   Picker:   run 'model' in a terminal (fzf arrow-key selector)"
 }
 
@@ -92,7 +92,14 @@ case "$ARG" in
   *)
     # If no provider prefix, try to fuzzy-match against available models
     if [[ "$ARG" != *"/"* ]]; then
-      MODELS_JSON=$(curl -s --max-time 5 "$PROXY/v1/models" 2>/dev/null)
+      CACHE="$HOME/.claude/model-cache.json"
+      CACHE_TTL=600  # 10 minutes
+      NOW=$(date +%s)
+      MTIME=$(stat -f %m "$CACHE" 2>/dev/null || echo 0)
+      if [ ! -f "$CACHE" ] || [ $(( NOW - MTIME )) -gt $CACHE_TTL ]; then
+        curl -s --max-time 5 "$PROXY/v1/models" > "$CACHE" 2>/dev/null
+      fi
+      MODELS_JSON=$(cat "$CACHE" 2>/dev/null)
       MATCH=$(QUERY="$ARG" MODELS_JSON="$MODELS_JSON" python3 << 'FUZZY'
 import json, sys, os
 arg = os.environ.get('QUERY', '').lower()
@@ -121,7 +128,7 @@ FUZZY
         echo "❌ '$ARG' needs a provider prefix (e.g. copilot/claude-sonnet-4.6)"
         echo ""
         echo "   Common models:"
-        echo "     copilot/gpt-4.1          copilot/claude-sonnet-4.6"
+        echo "     copilot/gpt-5-mini        copilot/claude-sonnet-4.6"
         echo "     copilot/claude-haiku-4.5  opencode/deepseek-v4-flash"
         echo ""
         echo "   Use /model (no args) to see all available models."
