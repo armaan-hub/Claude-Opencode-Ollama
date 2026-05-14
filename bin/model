@@ -43,29 +43,28 @@ interactive_pick() {
 
   # Build display lines matching Copilot CLI style
   local lines
-  lines=$(python3 - "$cur" <<'PYEOF'
+  lines=$(echo "$data" | python3 -c "
 import sys, json
 cur = sys.argv[1]
 data = json.load(sys.stdin)
 
 entries = []
-for m in data.get("data", []):
-    mid   = m.get("id", "")
-    owner = m.get("owned_by", "other").replace(" [FREE]","").replace(" [0.33x]","").replace(" [15x premium]","").replace(" [15x]","")
-    rate  = m.get("x_copilot_rate")
+for m in data.get('data', []):
+    mid   = m.get('id', '')
+    owner = m.get('owned_by', 'other').replace(' [FREE]','').replace(' [0.33x]','').replace(' [15x premium]','').replace(' [15x]','')
+    rate  = m.get('x_copilot_rate')
     if not mid:
         continue
     if rate == 0:
-        rate_str = "0x"
+        rate_str = '0x'
     elif rate is not None:
-        rate_str = f"{rate}x"
+        rate_str = f'{rate}x'
     else:
-        rate_str = "  "
-    active = "✓" if mid == cur else " "
+        rate_str = '  '
+    active = '✓' if mid == cur else ' '
     # Format:  active  model-id (padded)  rate  provider
-    print(f"{active}  {mid:<42} {rate_str:<7}  {owner}")
-PYEOF
-  )
+    print(f'{active}  {mid:<42} {rate_str:<7}  {owner}')
+" "$cur")
 
   if [[ -z "$lines" ]]; then
     echo "No models returned from proxy."
