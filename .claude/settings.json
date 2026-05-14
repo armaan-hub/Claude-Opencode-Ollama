@@ -1,7 +1,6 @@
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://127.0.0.1:4001",
-    "ANTHROPIC_API_KEY": "REDACTED_OPENCODE_KEY_GO",
     "ENABLE_TOOL_SEARCH": "true"
   },
   "hooks": {
@@ -68,6 +67,6 @@
       }
     }
   },
-  "theme": "dark",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "dark"
 }
