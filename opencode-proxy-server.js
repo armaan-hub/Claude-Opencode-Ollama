@@ -232,7 +232,9 @@ let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GRO
 rebuildSets();
 
 function getEndpoint(modelId) {
-  if (ZEN_FREE_MODELS.has(modelId)) return { base: OPENCODE_BASE_ZEN, apiKey: API_KEY_FREE };
+  // Strip the "opencode/" prefix if present
+  const cleanId = modelId.startsWith('opencode/') ? modelId.slice('opencode/'.length) : modelId;
+  if (ZEN_FREE_MODELS.has(cleanId)) return { base: OPENCODE_BASE_ZEN, apiKey: API_KEY_FREE };
   return { base: OPENCODE_BASE_GO, apiKey: API_KEY_GO };
 }
 
@@ -1964,6 +1966,7 @@ const server = http.createServer((req, res) => {
           // Inject context_length so Claude Code can display ctx% correctly
           const allModels = [...goModels, ...zenModels].map(m => ({
             ...m,
+            id: `opencode/${m.id}`,
             context_length: m.context_length || MODEL_CTX[m.id] || 128000,
           }));
           const groqModelsList       = GROQ_API_KEY
@@ -2109,8 +2112,12 @@ const server = http.createServer((req, res) => {
       // ─────────────────────────────────────────────────────────────────────────
 
       const openaiBody   = anthropicToOpenAI(anthropicBody);
-      // Strip provider prefix for upstream (e.g. copilot/gpt-4.1 → gpt-4.1)
-      if (providerInfo?.actualModel) openaiBody.model = providerInfo.actualModel;
+      // Strip provider prefix for upstream (e.g. copilot/gpt-4.1 → gpt-4.1, opencode/qwen3.6-plus → qwen3.6-plus)
+      if (providerInfo?.actualModel) {
+        openaiBody.model = providerInfo.actualModel;
+      } else if (model.startsWith('opencode/')) {
+        openaiBody.model = model.slice('opencode/'.length);
+      }
       const bodyStr = JSON.stringify(openaiBody);
 
       let forwardPromise;
