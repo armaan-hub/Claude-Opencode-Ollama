@@ -1,0 +1,150 @@
+#!/bin/bash
+# model — Zero-token interactive model picker for Claude Code / opencode
+# Usage:
+#   model              → full-screen interactive picker (like Copilot CLI)
+#   model list         → text list of all models
+#   model set <id>     → set model directly
+#   model clear        → remove override
+#   model status       → show current active model
+
+ACTIVE="$HOME/.claude/active-model"
+PROXY="${PROXY_URL:-http://127.0.0.1:4001}"
+
+current_model() {
+  [[ -f "$ACTIVE" ]] && tr -d '\n' < "$ACTIVE" || echo "none"
+}
+
+fetch_models_json() {
+  curl -sf --max-time 5 "$PROXY/v1/models" 2>/dev/null
+}
+
+set_model() {
+  local id="$1"
+  [[ -z "$id" ]] && echo "Usage: model set <id>" && exit 1
+  mkdir -p "$(dirname "$ACTIVE")"
+  printf "%s" "$id" > "$ACTIVE"
+  echo "✅ Switched to: $id"
+  echo "   Takes effect on your next Claude Code message."
+}
+
+clear_model() {
+  rm -f "$ACTIVE" && echo "✅ Model override cleared." || echo "ℹ️  No active override set."
+}
+
+interactive_pick() {
+  local data; data=$(fetch_models_json)
+  if [[ -z "$data" ]]; then
+    echo "⚠️  Cannot reach proxy at $PROXY"
+    echo "   Make sure the proxy is running: node ~/opencode-proxy-server.js &"
+    exit 1
+  fi
+
+  local cur; cur=$(current_model)
+
+  # Build display lines matching Copilot CLI style
+  local lines
+  lines=$(python3 - "$cur" <<'PYEOF'
+import sys, json
+cur = sys.argv[1]
+data = json.load(sys.stdin)
+
+entries = []
+for m in data.get("data", []):
+    mid   = m.get("id", "")
+    owner = m.get("owned_by", "other").replace(" [FREE]","").replace(" [0.33x]","").replace(" [15x premium]","").replace(" [15x]","")
+    rate  = m.get("x_copilot_rate")
+    if not mid:
+        continue
+    if rate == 0:
+        rate_str = "0x"
+    elif rate is not None:
+        rate_str = f"{rate}x"
+    else:
+        rate_str = "  "
+    active = "✓" if mid == cur else " "
+    # Format:  active  model-id (padded)  rate  provider
+    print(f"{active}  {mid:<42} {rate_str:<7}  {owner}")
+PYEOF
+  )
+
+  if [[ -z "$lines" ]]; then
+    echo "No models returned from proxy."
+    exit 1
+  fi
+
+  # Count models
+  local count; count=$(echo "$lines" | wc -l | tr -d ' ')
+  local cur_display; cur_display=$(current_model)
+
+  local selected
+  selected=$(echo "$lines" | fzf \
+    --ansi \
+    --prompt="  Search models... " \
+    --pointer="▶" \
+    --marker="✓" \
+    --height=100% \
+    --layout=reverse \
+    --border=rounded \
+    --border-label=" Select Model " \
+    --border-label-pos=3 \
+    --info=inline \
+    --header="  Choose the AI model to use for Claude Code / opencode
+  ✓ = currently active                           Rate: 0x=FREE  0.33x  1x  7.5x  15x
+  ──────────────────────────────────────────────────────────────────────────────────
+  Active model: $cur_display   ($count models available)" \
+    --header-first \
+    --bind "ctrl-c:abort,esc:abort" \
+    --preview="" \
+    --no-preview 2>/dev/null)
+
+  if [[ -z "$selected" ]]; then
+    echo "Cancelled — no change."
+    exit 0
+  fi
+
+  # Extract model ID (second field after the active marker)
+  local model_id
+  model_id=$(echo "$selected" | awk '{print $2}')
+
+  set_model "$model_id"
+}
+
+list_models() {
+  local data; data=$(fetch_models_json)
+  [[ -z "$data" ]] && echo "⚠️  Proxy unreachable at $PROXY" && exit 1
+  local cur; cur=$(current_model)
+  python3 -c "
+import sys, json, os
+cur = '$cur'
+data = json.loads(sys.stdin.read())
+by_owner = {}
+for m in data.get('data', []):
+    mid = m.get('id',''); owner = m.get('owned_by','other'); rate = m.get('x_copilot_rate')
+    if mid: by_owner.setdefault(owner, []).append((mid, rate))
+print(f'Active: {cur}\n')
+for owner, models in by_owner.items():
+    print(f'[{owner.upper()}]')
+    for mid, rate in models:
+        rs = ' [FREE]' if rate==0 else (f' [{rate}x]' if rate is not None and rate!=1 else '')
+        mk = '  <- active' if mid==cur else ''
+        print(f'  {mid}{rs}{mk}')
+    print()
+" <<< "$data"
+}
+
+case "${1:-}" in
+  list|ls)    list_models ;;
+  set)        set_model "$2" ;;
+  clear)      clear_model ;;
+  status)     echo "Active model: $(current_model)" ;;
+  help|-h|--help)
+    echo "model — zero-token model picker"
+    echo "  model              interactive TUI picker"
+    echo "  model list         show all models"
+    echo "  model set <id>     switch directly"
+    echo "  model clear        remove override"
+    echo "  model status       show current"
+    ;;
+  "")         interactive_pick ;;
+  *)          set_model "$1" ;;
+esac
