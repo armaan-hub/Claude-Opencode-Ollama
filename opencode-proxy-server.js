@@ -40,6 +40,8 @@ const GEMINI_HOST  = 'generativelanguage.googleapis.com';
 const GEMINI_BASE  = '/v1beta/openai';   // OpenAI-compatible endpoint
 const OPENAI_HOST  = 'api.openai.com';
 const OPENAI_BASE  = '/v1';
+const ANTHROPIC_DIRECT_HOST = 'api.anthropic.com';
+const ANTHROPIC_DIRECT_BASE = '/v1';
 
 const COPILOT_HOST           = 'api.githubcopilot.com';
 const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
@@ -73,6 +75,16 @@ const COPILOT_RATE_MULTIPLIERS = {
   'copilot/claude-opus-4.5':    1,
   'copilot/grok-code-fast-1':   1,
 };
+
+// Native Anthropic models (shown when anthropicApiKey is set in config)
+const ANTHROPIC_MODELS = [
+  'anthropic/claude-opus-4-5',
+  'anthropic/claude-3-7-sonnet-latest',
+  'anthropic/claude-sonnet-4-5',
+  'anthropic/claude-3-5-haiku-latest',
+  'anthropic/claude-3-5-sonnet-20241022',
+  'anthropic/claude-3-haiku-20240307',
+];
 
 const CONFIG_PATH = path.join(os.homedir(), 'opencode-proxy-config.json');
 
@@ -210,12 +222,13 @@ function rebuildSets() {
   OPENROUTER_API_KEY= typeof CFG.openrouterApiKey === 'string' ? CFG.openrouterApiKey : DEFAULT_CONFIG.openrouterApiKey;
   GEMINI_MODELS     = new Set(Array.isArray(CFG.geminiModels)   ? CFG.geminiModels   : DEFAULT_CONFIG.geminiModels);
   OPENAI_MODELS     = new Set(Array.isArray(CFG.openaiModels)   ? CFG.openaiModels   : DEFAULT_CONFIG.openaiModels);
-  GEMINI_API_KEY    = typeof CFG.geminiApiKey  === 'string' ? CFG.geminiApiKey  : DEFAULT_CONFIG.geminiApiKey;
-  OPENAI_API_KEY    = typeof CFG.openaiApiKey  === 'string' ? CFG.openaiApiKey  : DEFAULT_CONFIG.openaiApiKey;
+  GEMINI_API_KEY    = typeof CFG.geminiApiKey    === 'string' ? CFG.geminiApiKey    : DEFAULT_CONFIG.geminiApiKey;
+  OPENAI_API_KEY    = typeof CFG.openaiApiKey    === 'string' ? CFG.openaiApiKey    : DEFAULT_CONFIG.openaiApiKey;
+  ANTHROPIC_DIRECT_API_KEY = typeof CFG.anthropicApiKey === 'string' ? CFG.anthropicApiKey : '';
 }
 
 // GEMINI_MODELS / OPENAI_MODELS: used for /v1/models listing. Routing uses startsWith() prefix matching.
-let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY;
+let GO_MODELS, ZEN_FREE_MODELS, NON_VISION_MODELS, API_KEY_GO, API_KEY_FREE, GROQ_MODELS, NVIDIA_MODELS, OPENROUTER_MODELS, OLLAMA_MODELS, GEMINI_MODELS, OPENAI_MODELS, GROQ_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_DIRECT_API_KEY;
 rebuildSets();
 
 function getEndpoint(modelId) {
@@ -321,6 +334,20 @@ function getProviderForModel(modelId) {
       port:       443,
       ssl:        true,
       apiKey:     OPENAI_API_KEY,
+      actualModel,
+    };
+  }
+  if (modelId.startsWith('anthropic/')) {
+    const actualModel = modelId.slice('anthropic/'.length);
+    if (!actualModel) return null;
+    return {
+      name:              'Anthropic Direct',
+      isAnthropicDirect: true,
+      host:              ANTHROPIC_DIRECT_HOST,
+      base:              ANTHROPIC_DIRECT_BASE,
+      port:              443,
+      ssl:               true,
+      apiKey:            ANTHROPIC_DIRECT_API_KEY,
       actualModel,
     };
   }
@@ -1966,7 +1993,10 @@ const server = http.createServer((req, res) => {
           const openaiModelsList = OPENAI_API_KEY
             ? [...OPENAI_MODELS].map(id => ({ id: `openai/${id}`, object: 'model', owned_by: 'openai', created: 0, context_length: 131072 }))
             : [];
-          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList] };
+          const anthropicModelsList = ANTHROPIC_DIRECT_API_KEY
+            ? ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }))
+            : [];
+          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList, ...anthropicModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
         } catch {
@@ -2026,18 +2056,48 @@ const server = http.createServer((req, res) => {
       const providerInfo = getProviderForModel(model);
       // Increment request counter for this provider
       if (providerInfo) {
-        const pid = providerInfo.name === 'GitHub Copilot' ? 'github-copilot'
-                  : providerInfo.name === 'Google Gemini'  ? 'gemini'
-                  : providerInfo.name === 'OpenAI'         ? 'openai'
-                  : providerInfo.name === 'Groq'           ? 'groq'
-                  : providerInfo.name === 'Nvidia NIM'     ? 'nvidia'
-                  : providerInfo.name === 'OpenRouter'     ? 'openrouter'
-                  : providerInfo.name === 'Ollama'         ? 'ollama'
+        const pid = providerInfo.name === 'GitHub Copilot'   ? 'github-copilot'
+                  : providerInfo.name === 'Google Gemini'    ? 'gemini'
+                  : providerInfo.name === 'OpenAI'           ? 'openai'
+                  : providerInfo.name === 'Groq'             ? 'groq'
+                  : providerInfo.name === 'Nvidia NIM'       ? 'nvidia'
+                  : providerInfo.name === 'OpenRouter'       ? 'openrouter'
+                  : providerInfo.name === 'Ollama'           ? 'ollama'
+                  : providerInfo.name === 'Anthropic Direct' ? 'anthropic'
                   : 'opencode';
         REQUEST_COUNTS[pid] = (REQUEST_COUNTS[pid] || 0) + 1;
       } else {
         REQUEST_COUNTS.opencode = (REQUEST_COUNTS.opencode || 0) + 1;
       }
+
+      // ── Anthropic Direct passthrough (no OpenAI conversion needed) ───────────
+      if (providerInfo?.isAnthropicDirect) {
+        if (!providerInfo.apiKey) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: { type: 'authentication_error', message: 'Anthropic API key not configured. Add "anthropicApiKey": "sk-ant-..." to ~/opencode-proxy-config.json' } }));
+        }
+        const directBody    = { ...anthropicBody, model: providerInfo.actualModel };
+        const directBodyStr = JSON.stringify(directBody);
+        console.log(`[${new Date().toISOString()}] ${model} → Anthropic Direct`);
+        forwardToProvider('/messages', 'POST',
+          { authorization: '' }, directBodyStr,
+          providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
+          { 'x-api-key': providerInfo.apiKey, 'anthropic-version': '2023-06-01', 'Authorization': '' },
+          'Anthropic Direct'
+        ).then(upstream => {
+          res.writeHead(upstream.statusCode, {
+            'Content-Type': upstream.headers['content-type'] || 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          });
+          upstream.pipe(res);
+        }).catch(err => {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: err.message } }));
+        });
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       const openaiBody   = anthropicToOpenAI(anthropicBody);
       // Strip provider prefix for upstream (e.g. copilot/gpt-4.1 → gpt-4.1)
       if (providerInfo?.actualModel) openaiBody.model = providerInfo.actualModel;
@@ -2052,7 +2112,7 @@ const server = http.createServer((req, res) => {
         }
         if (['Google Gemini', 'OpenAI', 'Groq', 'Nvidia NIM', 'OpenRouter'].includes(providerInfo.name) && !providerInfo.apiKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: { message: `${providerInfo.name}: API key not configured. Visit http://localhost:4001/providers to connect.`, type: 'authentication_error' } }));
+          return res.end(JSON.stringify({ error: { message: `${providerInfo.name}: API key not configured. Visit http://127.0.0.1:4001/providers to connect.`, type: 'authentication_error' } }));
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);

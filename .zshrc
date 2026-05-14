@@ -1,5 +1,5 @@
 # If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -128,7 +128,7 @@ export ANTHROPIC_BASE_URL="http://localhost:4000"
 #   Step 1: pick  normal (trust prompt) or full (no prompts)
 #   Step 2: pick  any OpenCode / Zen-free / Ollama model
 run-claude-opencode() {
-  local PROXY="http://localhost:4001"
+  local PROXY="http://127.0.0.1:4001"
   # ── Step 1: mode ──────────────────────────────────────────────
   local mode
   mode=$(printf '%s\n' \
@@ -223,7 +223,7 @@ except (json.JSONDecodeError, KeyError, TypeError, ValueError):
 #   set-model clear            → remove override
 #   set-model list             → show all available models
 set-model() {
-  local PROXY="http://localhost:4001"
+  local PROXY="http://127.0.0.1:4001"
   local ACTIVE_MODEL_FILE="$HOME/.claude/active-model"
 
   case "$1" in
@@ -271,7 +271,7 @@ except Exception as e:
 #   switch-model <model-name>  → switch directly (like set-model)
 #   switch-model clear         → remove model override
 switch-model() {
-  local PROXY="http://localhost:4001"
+  local PROXY="http://127.0.0.1:4001"
   local ACTIVE_MODEL_FILE="$HOME/.claude/active-model"
 
   if [[ -z "$1" || "$1" == "list" ]]; then
@@ -312,19 +312,19 @@ except (json.JSONDecodeError, KeyError, TypeError, ValueError):
     fi
     if [[ "$chosen" == gemini/* ]]; then
       local gemini_key
-      gemini_key=$(curl -s --max-time 5 http://localhost:4001/api/providers 2>/dev/null \
+      gemini_key=$(curl -s --max-time 5 http://127.0.0.1:4001/api/providers 2>/dev/null \
         | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='gemini'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
       if [[ -z "$gemini_key" ]]; then
-        echo "⚠️  Google Gemini requires an API key. Connect it at: http://localhost:4001/providers"
+        echo "⚠️  Google Gemini requires an API key. Connect it at: http://127.0.0.1:4001/providers"
         return 1
       fi
     fi
     if [[ "$chosen" == openai/* ]]; then
       local openai_key
-      openai_key=$(curl -s --max-time 5 http://localhost:4001/api/providers 2>/dev/null \
+      openai_key=$(curl -s --max-time 5 http://127.0.0.1:4001/api/providers 2>/dev/null \
         | python3 -c "import sys,json; d=json.load(sys.stdin); p=[x for x in d['providers'] if x['id']=='openai'][0]; print('ok' if p['connected'] else '')" 2>/dev/null)
       if [[ -z "$openai_key" ]]; then
-        echo "⚠️  OpenAI requires an API key. Connect it at: http://localhost:4001/providers"
+        echo "⚠️  OpenAI requires an API key. Connect it at: http://127.0.0.1:4001/providers"
         return 1
       fi
     fi

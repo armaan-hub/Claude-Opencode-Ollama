@@ -5,19 +5,85 @@
 ARG="${*:-}"
 ACTIVE="$HOME/.claude/active-model"
 CUR=$([ -f "$ACTIVE" ] && cat "$ACTIVE" | tr -d '\n' || echo "none")
+PROXY="${PROXY_URL:-http://127.0.0.1:4001}"
+
+show_model_list() {
+  local MODELS_JSON
+  MODELS_JSON=$(curl -s --max-time 5 "$PROXY/v1/models" 2>/dev/null)
+  if [ -z "$MODELS_JSON" ]; then
+    echo "⚠️  Proxy not reachable at $PROXY"
+    echo "   Start it: node ~/opencode-proxy-server.js &"
+    return
+  fi
+  echo "📋 Available models:"
+  echo ""
+  MODELS_JSON="$MODELS_JSON" python3 << 'PYEOF'
+import json, os
+try:
+    data = json.loads(os.environ['MODELS_JSON'])
+    models = data.get('data', [])
+    groups = {}
+    for m in models:
+        mid = m.get('id', '')
+        owner = m.get('owned_by', '')
+        if not mid:
+            continue
+        if '/' in mid:
+            prefix = mid.split('/')[0]
+        elif 'groq' in owner.lower():
+            prefix = 'groq'
+        elif 'nvidia' in owner.lower():
+            prefix = 'nvidia'
+        elif 'openrouter' in owner.lower():
+            prefix = 'openrouter'
+        elif 'ollama' in owner.lower():
+            prefix = 'ollama'
+        elif 'github' in owner.lower() or 'copilot' in owner.lower():
+            prefix = 'copilot'
+        elif 'anthropic' in owner.lower():
+            prefix = 'anthropic'
+        elif 'google' in owner.lower():
+            prefix = 'gemini'
+        else:
+            prefix = 'opencode'
+        groups.setdefault(prefix, []).append((mid, owner))
+    order = ['copilot', 'opencode', 'gemini', 'openai', 'groq', 'nvidia', 'openrouter', 'ollama', 'anthropic']
+    labels = {'copilot': 'GitHub Copilot', 'opencode': 'OpenCode Zen',
+              'gemini': 'Google Gemini', 'openai': 'OpenAI', 'groq': 'Groq',
+              'nvidia': 'Nvidia NIM', 'openrouter': 'OpenRouter',
+              'ollama': 'Ollama (local)', 'anthropic': 'Anthropic Direct'}
+    for grp in order + sorted(set(groups) - set(order)):
+        if grp not in groups:
+            continue
+        label = labels.get(grp, grp.title())
+        print(f'  ── {label} ──')
+        for mid, owner in groups[grp]:
+            rate_tag = ''
+            if '[' in owner:
+                rate_tag = '  ' + owner[owner.index('['):]
+            print(f'    {mid}{rate_tag}')
+        print()
+except Exception as e:
+    print(f'  (error parsing model list: {e})')
+PYEOF
+  echo "💡 Switch model: /model <model-id>"
+  echo "   Example:  /model copilot/gpt-4.1"
+  echo "   Picker:   run 'model' in a terminal (fzf arrow-key selector)"
+}
 
 case "$ARG" in
   ""|"status")
     echo "Active model: $CUR"
     echo ""
-    # Open fzf picker in new Terminal window
-    osascript \
+    if osascript \
       -e 'tell application "Terminal"' \
       -e '  set newTab to do script "source ~/.zshrc 2>/dev/null; ~/bin/model; sleep 0.5; exit"' \
       -e '  set frontmost to true' \
-      -e 'end tell' 2>/dev/null \
-    && echo "🪟  Picker opened in Terminal window (arrow keys → Enter to select)" \
-    || echo "⚠️  Run in a terminal:  model"
+      -e 'end tell' 2>/dev/null; then
+      echo "🪟  Picker opened in Terminal window (arrow keys → Enter to select)"
+    else
+      show_model_list
+    fi
     ;;
   "clear")
     rm -f "$ACTIVE"
