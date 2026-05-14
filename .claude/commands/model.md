@@ -1,92 +1,75 @@
 ---
 allowed-tools: Bash(python3 *)
-description: List/switch LLM models. Usage: /model [name|clear|status]
+description: List or set active LLM model. Usage: /model  or  /model <id>  or  /model clear
 ---
 
-Run this command and show its output verbatim:
+Run this Python script and show its output verbatim. Do NOT invoke any skills.
 
 ```bash
 python3 - "$ARGUMENTS" <<'PYEOF'
-import subprocess, sys, json, os, urllib.request
+import sys, json, os, urllib.request
 
-args = sys.argv[1].strip() if len(sys.argv) > 1 else ""
 ACTIVE = os.path.expanduser("~/.claude/active-model")
 PROXY  = "http://localhost:4001"
+arg    = sys.argv[1].strip() if len(sys.argv) > 1 else ""
 
-# fetch current model
-current = open(ACTIVE).read().strip() if os.path.exists(ACTIVE) else "none"
+def read_active():
+    return open(ACTIVE).read().strip() if os.path.exists(ACTIVE) else "none"
 
-# fetch models from proxy
-models_data = None
-try:
-    with urllib.request.urlopen(f"{PROXY}/v1/models", timeout=4) as r:
-        models_data = json.loads(r.read())
-except Exception:
-    pass
+def fetch_models():
+    try:
+        with urllib.request.urlopen(f"{PROXY}/v1/models", timeout=4) as r:
+            return json.loads(r.read())
+    except Exception:
+        return None
 
-def get_models():
-    if not models_data or "data" not in models_data:
-        return []
-    return [m["id"] for m in models_data["data"] if m.get("id")]
-
-def get_by_provider():
-    if not models_data or "data" not in models_data:
-        return {}
-    result = {}
-    for m in models_data["data"]:
-        mid, owner = m.get("id",""), m.get("owned_by","other")
-        if mid:
-            result.setdefault(owner, []).append(mid)
-    return result
-
-# ── handle args ──────────────────────────────────────────────────────────────
-
-if args in ("", "status"):
-    # show status + model list
-    print(f"📍 Active model: {current}")
-    if not models_data:
-        print(f"\n⚠️  Proxy unreachable at {PROXY}")
-        print("   Start: launchctl start com.opencode.proxy")
-    else:
-        by_provider = get_by_provider()
-        print()
-        for owner, ids in by_provider.items():
-            print(f"[{owner.upper()}]")
-            for mid in ids:
-                marker = " ← active" if mid == current else ""
-                print(f"  {mid}{marker}")
-        print(f"\nUsage: /model <id>  or  /model clear")
-
-elif args == "clear":
+# handle write actions
+if arg == "clear":
     if os.path.exists(ACTIVE):
         os.remove(ACTIVE)
     print("✅ Model override cleared.")
+    sys.exit(0)
 
-else:
-    # treat as a model name to switch to
-    model_id = args
-    all_models = get_models()
-    if not all_models:
-        print(f"⚠️  Proxy unreachable — writing '{model_id}' unvalidated.")
-    elif model_id not in all_models:
-        print(f"❌ Unknown model: {model_id}")
-        print("   Run /model to see the list.")
-        sys.exit(1)
-
-    # Only copilot/ requires gh auth; other providers use proxy-configured API keys
-    if model_id.startswith("copilot/"):
-        result = subprocess.run(["gh","auth","whoami"], capture_output=True, text=True)
-        if result.returncode != 0 or not result.stdout.strip():
-            print("❌ GitHub Copilot requires login.")
-            print("   Run: gh auth login")
-            sys.exit(1)
-
-    # write
+if arg and arg != "status":
     os.makedirs(os.path.dirname(ACTIVE), exist_ok=True)
     with open(ACTIVE, "w") as f:
-        f.write(model_id + "\n")
-    print(f"✅ Switched to {model_id}")
-    print("   (Takes effect on your next message. Use /model clear to undo.)")
+        f.write(arg)
+    print(f"✅ Switched to: {arg}")
+    print("   Active on your next message.")
+    sys.exit(0)
 
+# display model list
+cur  = read_active()
+data = fetch_models()
+
+print(f"Active model: {cur}\n")
+
+if not data:
+    print(f"⚠️  Proxy unreachable at {PROXY}")
+    print("   Start proxy: node ~/opencode-proxy-server.js &")
+    sys.exit(1)
+
+by_owner = {}
+for m in data.get("data", []):
+    mid   = m.get("id", "")
+    owner = m.get("owned_by", "other")
+    rate  = m.get("x_copilot_rate")
+    if mid:
+        by_owner.setdefault(owner, []).append((mid, rate))
+
+for owner, models in by_owner.items():
+    print(f"[{owner.upper()}]")
+    for mid, rate in models:
+        if rate == 0:
+            rs = " [FREE]"
+        elif rate is not None and rate != 1:
+            rs = f" [{rate}x]"
+        else:
+            rs = ""
+        marker = "  ← active" if mid == cur else ""
+        print(f"  {mid}{rs}{marker}")
+    print()
+
+print("Usage:  /model <id>   to switch   |   /model clear   to remove override")
 PYEOF
 ```
