@@ -1993,9 +1993,7 @@ const server = http.createServer((req, res) => {
           const openaiModelsList = OPENAI_API_KEY
             ? [...OPENAI_MODELS].map(id => ({ id: `openai/${id}`, object: 'model', owned_by: 'openai', created: 0, context_length: 131072 }))
             : [];
-          const anthropicModelsList = ANTHROPIC_DIRECT_API_KEY
-            ? ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }))
-            : [];
+          const anthropicModelsList = ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }));
           const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList, ...anthropicModelsList] };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
@@ -2072,9 +2070,12 @@ const server = http.createServer((req, res) => {
 
       // ── Anthropic Direct passthrough (no OpenAI conversion needed) ───────────
       if (providerInfo?.isAnthropicDirect) {
-        if (!providerInfo.apiKey) {
+        // Use explicit config key OR fall back to the key Claude Code sent us
+        const requestApiKey = req.headers['x-api-key'] || (req.headers['authorization'] || '').replace('Bearer ', '');
+        const anthropicKey  = ANTHROPIC_DIRECT_API_KEY || requestApiKey;
+        if (!anthropicKey) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: { type: 'authentication_error', message: 'Anthropic API key not configured. Add "anthropicApiKey": "sk-ant-..." to ~/opencode-proxy-config.json' } }));
+          return res.end(JSON.stringify({ error: { type: 'authentication_error', message: 'No Anthropic API key available. Set ANTHROPIC_API_KEY or add "anthropicApiKey" to ~/opencode-proxy-config.json' } }));
         }
         const directBody    = { ...anthropicBody, model: providerInfo.actualModel };
         const directBodyStr = JSON.stringify(directBody);
@@ -2082,7 +2083,7 @@ const server = http.createServer((req, res) => {
         forwardToProvider('/messages', 'POST',
           { authorization: '' }, directBodyStr,
           providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
-          { 'x-api-key': providerInfo.apiKey, 'anthropic-version': '2023-06-01', 'Authorization': '' },
+          { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'Authorization': '' },
           'Anthropic Direct'
         ).then(upstream => {
           res.writeHead(upstream.statusCode, {
