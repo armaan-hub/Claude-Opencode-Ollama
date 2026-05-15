@@ -302,7 +302,7 @@ def generate_excel_from_json(json_path, output_path):
                 ws.cell(row=row_idx, column=col).alignment = Alignment(horizontal="right")
     
     # Add totals row
-    total_row = len(invoice_data) + 3
+    total_row = len(invoice_data) + 2
     ws.cell(row=total_row, column=1, value="TOTALS:")
     ws.cell(row=total_row, column=1).font = Font(bold=True)
     
