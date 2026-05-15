@@ -42,7 +42,7 @@ def find_invoice_files():
 def extract_text_from_file(file_path):
     """
     Convert PDF or image to text using OCR.
-    Returns: extracted text string
+    Returns: tuple (text, None) on success, (None, error_msg) on failure
     """
     try:
         if file_path.lower().endswith('.pdf'):
@@ -51,13 +51,13 @@ def extract_text_from_file(file_path):
             text = ""
             for image in images[:5]:  # Limit to first 5 pages for speed
                 text += pytesseract.image_to_string(image) + "\n"
-            return text
+            return text, None
         else:
             # Process image directly
             image = Image.open(file_path)
-            return pytesseract.image_to_string(image)
+            return pytesseract.image_to_string(image), None
     except Exception as e:
-        return f"ERROR: {str(e)}"
+        return None, str(e)
 
 
 def extract_invoice_data(file_path, location):
@@ -65,9 +65,9 @@ def extract_invoice_data(file_path, location):
     Extract structured invoice data from OCR text.
     Returns: dict with extracted fields or None if extraction fails
     """
-    text = extract_text_from_file(file_path)
-
-    if text.startswith("ERROR"):
+    text, error = extract_text_from_file(file_path)
+    
+    if error or text is None:
         return None
 
     # Initialize data structure
@@ -160,9 +160,9 @@ def extract_invoice_data(file_path, location):
 
     # Extract Supplier Name (often near top or after company name)
     supplier_patterns = [
-        r'From\s*:?\s*([A-Za-z\s&\-\.]+)',
-        r'Supplier\s*:?\s*([A-Za-z\s&\-\.]+)',
-        r'Vendor\s*:?\s*([A-Za-z\s&\-\.]+)'
+        r'From\s*:?\s*([A-Za-z0-9\s&\-\.(),/]+)',
+        r'Supplier\s*:?\s*([A-Za-z0-9\s&\-\.(),/]+)',
+        r'Vendor\s*:?\s*([A-Za-z0-9\s&\-\.(),/]+)'
     ]
     for pattern in supplier_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -177,7 +177,7 @@ def extract_invoice_data(file_path, location):
         lines = text.split('\n')
         for line in lines[:10]:
             line = line.strip()
-            if len(line) > 5 and len(line) < 100 and not line.isupper():
+            if len(line) > 5 and len(line) < 100:
                 data["supplier_name"] = line
                 break
 
@@ -188,6 +188,14 @@ def process_all_invoices():
     """
     Process all invoice files and store data in JSON.
     """
+    # Validate output directory
+    if not os.path.isdir(INVOICE_DIR):
+        print(f"ERROR: Output directory does not exist: {INVOICE_DIR}")
+        return None
+    if not os.access(INVOICE_DIR, os.W_OK):
+        print(f"ERROR: Output directory is not writable: {INVOICE_DIR}")
+        return None
+    
     files = find_invoice_files()
     extracted_data = []
     log_entries = []
@@ -208,22 +216,32 @@ def process_all_invoices():
         except Exception as e:
             log_entries.append(f"✗ {file_name} - ERROR: {str(e)}")
     
-    # Save JSON data
-    json_path = os.path.join(INVOICE_DIR, "invoice_data.json")
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(extracted_data, f, indent=2, ensure_ascii=False)
-    print(f"\n✓ Saved {len(extracted_data)} records to {json_path}")
+    # Save JSON data with error handling
+    try:
+        json_path = os.path.join(INVOICE_DIR, "invoice_data.json")
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(extracted_data, f, indent=2, ensure_ascii=False)
+        print(f"\n✓ Saved {len(extracted_data)} records to {json_path}")
+    except Exception as e:
+        print(f"✗ ERROR writing JSON: {e}")
+        print(f"  Extracted data may be lost!")
+        return None
     
-    # Save log
-    log_path = os.path.join(INVOICE_DIR, "extraction_log.txt")
-    with open(log_path, 'w', encoding='utf-8') as f:
-        f.write(f"Invoice Extraction Log\n")
-        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"Total files processed: {len(files)}\n")
-        f.write(f"Successful extractions: {len(extracted_data)}\n\n")
-        for entry in log_entries:
-            f.write(entry + "\n")
-    print(f"✓ Saved log to {log_path}")
+    # Save log file with error handling
+    try:
+        log_path = os.path.join(INVOICE_DIR, "extraction_log.txt")
+        with open(log_path, 'w', encoding='utf-8') as f:
+            f.write(f"Invoice Extraction Log\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total files processed: {len(files)}\n")
+            f.write(f"Successful extractions: {len(extracted_data)}\n\n")
+            for entry in log_entries:
+                f.write(entry + "\n")
+        print(f"✓ Saved log to {log_path}")
+    except Exception as e:
+        print(f"✗ ERROR writing log file: {e}")
+        print(f"  Log data may be incomplete!")
+        return None
     
     return extracted_data
 
@@ -273,8 +291,9 @@ def generate_excel_from_json(json_path, output_path):
         taxable = invoice.get("taxable_amount", "")
         if taxable:
             try:
-                ws.cell(row=row_idx, column=5, value=float(taxable))
-            except:
+                cell = ws.cell(row=row_idx, column=5, value=float(taxable))
+                cell.number_format = '#,##0.00'
+            except (ValueError, TypeError):
                 ws.cell(row=row_idx, column=5, value=taxable)
         
         ws.cell(row=row_idx, column=6, value=invoice.get("vat_percent", ""))
@@ -282,15 +301,17 @@ def generate_excel_from_json(json_path, output_path):
         vat_amt = invoice.get("vat_amount", "")
         if vat_amt:
             try:
-                ws.cell(row=row_idx, column=7, value=float(vat_amt))
-            except:
+                cell = ws.cell(row=row_idx, column=7, value=float(vat_amt))
+                cell.number_format = '#,##0.00'
+            except (ValueError, TypeError):
                 ws.cell(row=row_idx, column=7, value=vat_amt)
         
         total = invoice.get("total_amount", "")
         if total:
             try:
-                ws.cell(row=row_idx, column=8, value=float(total))
-            except:
+                cell = ws.cell(row=row_idx, column=8, value=float(total))
+                cell.number_format = '#,##0.00'
+            except (ValueError, TypeError):
                 ws.cell(row=row_idx, column=8, value=total)
         
         ws.cell(row=row_idx, column=9, value=invoice.get("location", ""))
@@ -306,10 +327,15 @@ def generate_excel_from_json(json_path, output_path):
     ws.cell(row=total_row, column=1, value="TOTALS:")
     ws.cell(row=total_row, column=1).font = Font(bold=True)
     
-    # Sum formulas
-    ws.cell(row=total_row, column=5, value=f"=SUM(E2:E{len(invoice_data)+1})")
-    ws.cell(row=total_row, column=7, value=f"=SUM(G2:G{len(invoice_data)+1})")
-    ws.cell(row=total_row, column=8, value=f"=SUM(H2:H{len(invoice_data)+1})")
+    # Sum formulas with currency formatting
+    cell = ws.cell(row=total_row, column=5, value=f"=SUM(E2:E{len(invoice_data)+1})")
+    cell.number_format = '#,##0.00'
+    
+    cell = ws.cell(row=total_row, column=7, value=f"=SUM(G2:G{len(invoice_data)+1})")
+    cell.number_format = '#,##0.00'
+    
+    cell = ws.cell(row=total_row, column=8, value=f"=SUM(H2:H{len(invoice_data)+1})")
+    cell.number_format = '#,##0.00'
     
     # Format totals row
     for col in [1, 5, 7, 8]:
