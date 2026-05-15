@@ -5,6 +5,10 @@ import json
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
+from pdf2image import convert_from_path
+from PIL import Image
+import pytesseract
+import re
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -35,25 +39,149 @@ def find_invoice_files():
     return invoice_files
 
 
-def extract_invoice_data(file_path, location):
+def extract_text_from_file(file_path):
     """
-    Extract invoice data from a file.
-    Returns a dictionary with invoice information.
+    Convert PDF or image to text using OCR.
+    Returns: extracted text string
     """
     try:
-        file_name = os.path.basename(file_path)
-        file_size = os.path.getsize(file_path)
-        
-        return {
-            "file_name": file_name,
-            "file_path": file_path,
-            "location": location,
-            "file_size": file_size,
-            "extraction_timestamp": datetime.now().isoformat(),
-            "status": "processed"
-        }
+        if file_path.lower().endswith('.pdf'):
+            # Convert PDF to images
+            images = convert_from_path(file_path, dpi=150)
+            text = ""
+            for image in images[:5]:  # Limit to first 5 pages for speed
+                text += pytesseract.image_to_string(image) + "\n"
+            return text
+        else:
+            # Process image directly
+            image = Image.open(file_path)
+            return pytesseract.image_to_string(image)
     except Exception as e:
-        raise Exception(f"Failed to extract data from {file_path}: {str(e)}")
+        return f"ERROR: {str(e)}"
+
+
+def extract_invoice_data(file_path, location):
+    """
+    Extract structured invoice data from OCR text.
+    Returns: dict with extracted fields or None if extraction fails
+    """
+    text = extract_text_from_file(file_path)
+
+    if text.startswith("ERROR"):
+        return None
+
+    # Initialize data structure
+    data = {
+        "file_path": file_path,
+        "location": location,
+        "date": None,
+        "supplier_name": None,
+        "invoice_no": None,
+        "quantity": None,
+        "taxable_amount": None,
+        "vat_percent": None,
+        "vat_amount": None,
+        "total_amount": None,
+        "raw_text": text[:500]  # Store first 500 chars for debugging
+    }
+
+    # Extract Invoice Number (common patterns)
+    invoice_patterns = [
+        r'INV[^0-9]*(\d+)',
+        r'Invoice\s*#?\s*(\d+)',
+        r'Invoice\s*No\.?\s*(\d+)',
+        r'GD-PI-(\d+)'
+    ]
+    for pattern in invoice_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            data["invoice_no"] = match.group(1)
+            break
+
+    # Extract Date (patterns: DD-MM-YY, DD/MM/YYYY, etc.)
+    date_patterns = [
+        r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'Date[^0-9]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})'
+    ]
+    for pattern in date_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            data["date"] = match.group(1)
+            break
+
+    # Extract Total Amount (look for "Total", "Grand Total", "Amount Due")
+    total_patterns = [
+        r'[Gg]rand\s+[Tt]otal\s*:?\s*([0-9,]+\.?\d*)',
+        r'[Tt]otal\s+[Aa]mount\s*:?\s*([0-9,]+\.?\d*)',
+        r'[Aa]mount\s+[Dd]ue\s*:?\s*([0-9,]+\.?\d*)',
+        r'TOTAL\s*:?\s*([0-9,]+\.?\d*)'
+    ]
+    for pattern in total_patterns:
+        match = re.search(pattern, text)
+        if match:
+            amount_str = match.group(1).replace(',', '')
+            data["total_amount"] = amount_str
+            break
+
+    # Extract VAT % and VAT Amount
+    vat_patterns = [
+        r'VAT\s*(\d+)\s*%',
+        r'TAX\s*(\d+)\s*%'
+    ]
+    for pattern in vat_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            data["vat_percent"] = match.group(1)
+            break
+
+    vat_amount_patterns = [
+        r'VAT\s+Amount\s*:?\s*([0-9,]+\.?\d*)',
+        r'Tax\s+Amount\s*:?\s*([0-9,]+\.?\d*)'
+    ]
+    for pattern in vat_amount_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            amount_str = match.group(1).replace(',', '')
+            data["vat_amount"] = amount_str
+            break
+
+    # Extract Taxable Amount (Subtotal before VAT)
+    taxable_patterns = [
+        r'[Ss]ubtotal\s*:?\s*([0-9,]+\.?\d*)',
+        r'[Tt]axable\s+[Aa]mount\s*:?\s*([0-9,]+\.?\d*)',
+        r'Before\s+TAX\s*:?\s*([0-9,]+\.?\d*)'
+    ]
+    for pattern in taxable_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            amount_str = match.group(1).replace(',', '')
+            data["taxable_amount"] = amount_str
+            break
+
+    # Extract Supplier Name (often near top or after company name)
+    supplier_patterns = [
+        r'From\s*:?\s*([A-Za-z\s&\-\.]+)',
+        r'Supplier\s*:?\s*([A-Za-z\s&\-\.]+)',
+        r'Vendor\s*:?\s*([A-Za-z\s&\-\.]+)'
+    ]
+    for pattern in supplier_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            if len(name) > 3 and len(name) < 100:
+                data["supplier_name"] = name
+                break
+
+    # If supplier not found, try to extract company name from top lines
+    if not data["supplier_name"]:
+        lines = text.split('\n')
+        for line in lines[:10]:
+            line = line.strip()
+            if len(line) > 5 and len(line) < 100 and not line.isupper():
+                data["supplier_name"] = line
+                break
+
+    return data
 
 
 def process_all_invoices():
@@ -211,6 +339,22 @@ def generate_excel_from_json(json_path, output_path):
 
 # Test the function
 if __name__ == "__main__":
+    files = find_invoice_files()
+    print(f"Found {len(files)} invoice files")
+
+    # Also test extraction
+    if files:
+        test_file, test_location = files[0]
+        print(f"\nTesting extraction on: {os.path.basename(test_file)}")
+        data = extract_invoice_data(test_file, test_location)
+        if data:
+            print(f"Invoice No: {data.get('invoice_no')}")
+            print(f"Date: {data.get('date')}")
+            print(f"Supplier: {data.get('supplier_name')}")
+            print(f"Total: {data.get('total_amount')}")
+        else:
+            print("Extraction failed")
+
     data = process_all_invoices()
     
     # Generate Excel
