@@ -100,7 +100,122 @@ def process_all_invoices():
     return extracted_data
 
 
+def generate_excel_from_json(json_path, output_path):
+    """
+    Convert JSON invoice data to formatted Excel file with totals.
+    """
+    # Load JSON data
+    with open(json_path, 'r', encoding='utf-8') as f:
+        invoice_data = json.load(f)
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Invoices"
+    
+    # Define headers
+    headers = ["Date", "Supplier Name", "Invoice No.", "Quantity", 
+               "Taxable Amount", "VAT %", "VAT Amount", "Total Amount", "Location"]
+    
+    # Write headers with formatting
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    # Write data rows
+    for row_idx, invoice in enumerate(invoice_data, 2):
+        ws.cell(row=row_idx, column=1, value=invoice.get("date", ""))
+        ws.cell(row=row_idx, column=2, value=invoice.get("supplier_name", ""))
+        ws.cell(row=row_idx, column=3, value=invoice.get("invoice_no", ""))
+        ws.cell(row=row_idx, column=4, value=invoice.get("quantity", ""))
+        
+        # Format amounts as numbers
+        taxable = invoice.get("taxable_amount", "")
+        if taxable:
+            try:
+                ws.cell(row=row_idx, column=5, value=float(taxable))
+            except:
+                ws.cell(row=row_idx, column=5, value=taxable)
+        
+        ws.cell(row=row_idx, column=6, value=invoice.get("vat_percent", ""))
+        
+        vat_amt = invoice.get("vat_amount", "")
+        if vat_amt:
+            try:
+                ws.cell(row=row_idx, column=7, value=float(vat_amt))
+            except:
+                ws.cell(row=row_idx, column=7, value=vat_amt)
+        
+        total = invoice.get("total_amount", "")
+        if total:
+            try:
+                ws.cell(row=row_idx, column=8, value=float(total))
+            except:
+                ws.cell(row=row_idx, column=8, value=total)
+        
+        ws.cell(row=row_idx, column=9, value=invoice.get("location", ""))
+        
+        # Apply borders
+        for col in range(1, 10):
+            ws.cell(row=row_idx, column=col).border = border
+            if col in [5, 7, 8]:  # Numeric columns
+                ws.cell(row=row_idx, column=col).alignment = Alignment(horizontal="right")
+    
+    # Add totals row
+    total_row = len(invoice_data) + 3
+    ws.cell(row=total_row, column=1, value="TOTALS:")
+    ws.cell(row=total_row, column=1).font = Font(bold=True)
+    
+    # Sum formulas
+    ws.cell(row=total_row, column=5, value=f"=SUM(E2:E{len(invoice_data)+1})")
+    ws.cell(row=total_row, column=7, value=f"=SUM(G2:G{len(invoice_data)+1})")
+    ws.cell(row=total_row, column=8, value=f"=SUM(H2:H{len(invoice_data)+1})")
+    
+    # Format totals row
+    for col in [1, 5, 7, 8]:
+        cell = ws.cell(row=total_row, column=col)
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+        cell.border = border
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 25
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 10
+    ws.column_dimensions['G'].width = 15
+    ws.column_dimensions['H'].width = 15
+    ws.column_dimensions['I'].width = 15
+    
+    # Save workbook
+    wb.save(output_path)
+    print(f"✓ Excel file saved: {output_path}")
+    print(f"  - {len(invoice_data)} invoice records")
+    print(f"  - Summary row with totals")
+
+
+
 # Test the function
 if __name__ == "__main__":
     data = process_all_invoices()
-    print(f"\nExtraction complete: {len(data)} invoices processed")
+    
+    # Generate Excel
+    json_path = os.path.join(INVOICE_DIR, "invoice_data.json")
+    excel_path = os.path.join(INVOICE_DIR, "Invoice_Summary.xlsx")
+    generate_excel_from_json(json_path, excel_path)
+    
+    print(f"\n✓ All processing complete!")
