@@ -1106,6 +1106,8 @@ async function loadConfig(){
     _configRetried=false;
   } catch(e) {
     const errHtml='<div style="font-size:12px;color:#f85149">❌ Failed to load — <button onclick="loadConfig()" style="background:none;border:1px solid #f85149;color:#f85149;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:11px">Retry</button></div>';
+    document.getElementById('d-go').textContent='?';
+    document.getElementById('d-free').textContent='?';
     document.getElementById('d-keys').innerHTML=errHtml;
     document.getElementById('d-summary').innerHTML=errHtml;
     if(!_configRetried){_configRetried=true;setTimeout(loadConfig,1500);}
@@ -1161,7 +1163,7 @@ async function loadStats(){
     const upMin=Math.floor((j.uptime||0)/60);
     const upStr=upMin<60?upMin+'m uptime':Math.floor(upMin/60)+'h '+upMin%60+'m uptime';
     let html='<div style="font-size:12px;color:#8b949e;line-height:2">';
-    html+='Active model: <code style="color:#58a6ff">'+(j.activeModel||'none')+'</code><br>';
+    html+='Active model: <code style="color:#58a6ff">'+esc(j.activeModel||'none')+'</code><br>';
     html+='Total requests: <strong style="color:#3fb950">'+(j.totalRequests||0)+'</strong> &nbsp;·&nbsp; '+upStr;
     if(j.providers&&j.providers.length){
       html+='<br><span style="color:#6e7681">By provider: ';
