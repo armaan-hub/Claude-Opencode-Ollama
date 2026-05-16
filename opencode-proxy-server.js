@@ -267,6 +267,7 @@ const REQUEST_COUNTS = {
   opencode: 0,
   anthropic: 0,
 };
+const PROXY_START_TIME = Date.now(); // used by /api/stats uptime calculation
 let _oauthState = ''; // CSRF state for GitHub OAuth flow
 
 function getCopilotToken(forceRefresh = false) {
@@ -1568,6 +1569,25 @@ const server = http.createServer((req, res) => {
     const activeModel = readActiveModel();
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     return res.end(JSON.stringify({ model: activeModel }));
+  }
+
+  // Live stats — active model + per-provider request counts + uptime
+  if (method === 'GET' && reqPath === '/api/stats') {
+    const activeModel = readActiveModel();
+    const totalRequests = Object.values(REQUEST_COUNTS).reduce((a, b) => a + b, 0);
+    const providers = [
+      { id: 'opencode',       name: 'OpenCode (free)',  requests: REQUEST_COUNTS.opencode       || 0 },
+      { id: 'github-copilot', name: 'GitHub Copilot',   requests: REQUEST_COUNTS['github-copilot'] || 0 },
+      { id: 'gemini',         name: 'Gemini',           requests: REQUEST_COUNTS.gemini         || 0 },
+      { id: 'groq',           name: 'Groq',             requests: REQUEST_COUNTS.groq           || 0 },
+      { id: 'openai',         name: 'OpenAI',           requests: REQUEST_COUNTS.openai         || 0 },
+      { id: 'nvidia',         name: 'Nvidia NIM',       requests: REQUEST_COUNTS.nvidia         || 0 },
+      { id: 'openrouter',     name: 'OpenRouter',       requests: REQUEST_COUNTS.openrouter     || 0 },
+      { id: 'ollama',         name: 'Ollama',           requests: REQUEST_COUNTS.ollama         || 0 },
+    ].filter(p => p.requests > 0);
+    const uptime = Math.floor((Date.now() - PROXY_START_TIME) / 1000);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify({ activeModel, totalRequests, providers, uptime }));
   }
 
   // ── GitHub Copilot auth endpoints ─────────────────────────────────────────
