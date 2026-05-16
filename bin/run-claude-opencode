@@ -142,7 +142,8 @@ for m in data.get('data', []):
         echo "Cancelled."
         exit 0
       fi
-      MODEL_ARG=$(echo "$SELECTED" | awk '{print $2}')
+      # Strip leading ✓ or spaces marker, then grab first field = model ID
+      MODEL_ARG=$(echo "$SELECTED" | sed 's/^[✓ ]*//' | awk '{print $1}')
     else
       # Fallback: numbered list (fzf not installed)
       declare -a model_array
@@ -171,6 +172,11 @@ for m in data.get('data', []):
 fi
 
 # Persist selected model — proxy reads this file on every request
+# Validate: reject rate labels (0x, FREE, etc.) and bare provider names
+if [[ "$MODEL_ARG" =~ ^[0-9]*x$ ]] || [[ "$MODEL_ARG" == "FREE" ]] || [[ "$MODEL_ARG" == "opencode" ]] || [[ "$MODEL_ARG" == "copilot" ]] || [[ "$MODEL_ARG" == "ollama" ]]; then
+  echo "⚠️  '$MODEL_ARG' is not a valid model ID — keeping previous model"
+  MODEL_ARG=$(cat "$HOME/.claude/active-model" 2>/dev/null || echo "opencode/minimax-m2.5-free")
+fi
 printf "%s" "$MODEL_ARG" > "$HOME/.claude/active-model"
 
 echo ""
