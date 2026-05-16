@@ -1,6 +1,6 @@
 ---
-allowed-tools: Bash(~/bin/model-open *)
-description: Model picker. /model = TUI picker, /model <id> = switch, /model clear = reset
+allowed-tools: Bash(~/bin/model *)
+description: Model picker. /model = interactive fzf picker, /model <id> = switch, /model clear = reset
 ---
 
-Run verbatim (no skills, no superpowers): `~/bin/model-open $ARGUMENTS`
+Run verbatim (no skills, no superpowers): `~/bin/model $ARGUMENTS`

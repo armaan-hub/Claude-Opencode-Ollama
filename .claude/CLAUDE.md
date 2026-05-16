@@ -6,14 +6,14 @@ When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` 
 
 For these slash commands, do NOT invoke any skills, do NOT run the superpowers workflow, and do NOT call the Skill tool at any point. Run the bash command shown and display its output verbatim:
 
-- `/model` → run `model-open` (shows models; use arrow-key picker: run `model` in terminal)
-- `/model <id>` → run `model-open <id>` (sets model by ID)
-- `/switch-model` → run `model-open` (same as /model)
+- `/model` → run `~/bin/model` (opens interactive fzf model picker in the terminal)
+- `/model <id>` → run `~/bin/model <id>` (switches to that model directly)
+- `/switch-model` → run `~/bin/model` (same as /model)
 - `/provider` → run `provider-status`
 - `/providers` → run `provider-status`
 - `/connect-provider` → run `provider-status`
 
-**Mode awareness**: `model-open` and `model` automatically detect whether you're in official Claude PRO mode or OpenCode Proxy mode based on environment. In official mode they show Claude PRO models; in proxy mode they show OpenCode models.
+**Mode awareness**: `model` auto-detects official Claude PRO mode vs OpenCode Proxy mode based on environment. In official mode it shows Claude PRO models; in proxy mode it shows OpenCode models.
 
 ## Provider Management
 
