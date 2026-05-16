@@ -1921,6 +1921,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Claude Code gateway models endpoint — returns all proxy models with anthropic/ prefix
+  // Claude Code calls GET /api/gateway/models on baseUrl to populate its native "Select model" picker
+  if (method === 'GET' && reqPath === '/api/gateway/models') {
+    const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '') || '';
+    Promise.all([
+      forwardToZen('/models', 'GET', { authorization: `Bearer ${apiKey}` }, null, OPENCODE_BASE_GO),
+      forwardToZen('/models', 'GET', { authorization: 'Bearer public' }, null, OPENCODE_BASE_ZEN),
+    ]).then(([goRes, zenRes]) => {
+      const chunks = { go: [], zen: [] };
+      goRes.on('data', d => chunks.go.push(d));
+      zenRes.on('data', d => chunks.zen.push(d));
+      let done = 0;
+      const finish = () => {
+        if (++done < 2) return;
+        try {
+          const goData = JSON.parse(Buffer.concat(chunks.go).toString());
+          const zenData = JSON.parse(Buffer.concat(chunks.zen).toString());
+          const goModels = goData.data || [];
+          const zenModels = (zenData.data || []).filter(m =>
+            ZEN_FREE_MODELS.has(m.id) && !goModels.find(g => g.id === m.id)
+          );
+          const openCodeModels = [...goModels, ...zenModels].map(m => ({
+            id: `anthropic/opencode/${m.id}`,
+            display_name: `opencode / ${m.id}`,
+          }));
+          const copilotToken = getCopilotToken();
+          const copilotModels = copilotToken
+            ? COPILOT_MODELS.map(id => ({
+                id: `anthropic/${id}`,
+                display_name: `GitHub Copilot / ${id.replace('copilot/', '')}`,
+              }))
+            : [];
+          const models = [...openCodeModels, ...copilotModels];
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ models }));
+        } catch {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to build gateway model list' }));
+        }
+      };
+      goRes.on('end', finish);
+      zenRes.on('end', finish);
+    }).catch(err => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    });
+    return;
+  }
+
   // Models list — merge Go plan + free Zen models
   if (method === 'GET' && reqPath === '/v1/models') {
     // Known context windows for OpenCode models (used to populate ctx% in Claude Code)
@@ -2059,7 +2108,17 @@ const server = http.createServer((req, res) => {
       // ─────────────────────────────────────────────────────────────────────
 
       const isStreaming  = !!anthropicBody.stream;
-      const model        = anthropicBody.model;
+      // Strip anthropic/ gateway prefix for non-native-Anthropic models
+      // e.g. "anthropic/opencode/minimax-m2.7" → "opencode/minimax-m2.7"
+      //      "anthropic/copilot/gpt-5.4"       → "copilot/gpt-5.4"
+      let model = anthropicBody.model;
+      if (model.startsWith('anthropic/')) {
+        const sub = model.slice('anthropic/'.length);
+        if (sub.startsWith('opencode/') || sub.startsWith('copilot/') ||
+            sub.startsWith('gemini/')   || sub.startsWith('openai/')) {
+          model = sub;
+        }
+      }
 
       // Route to correct provider (before body serialization so we can fix model name)
       const providerInfo = getProviderForModel(model);
