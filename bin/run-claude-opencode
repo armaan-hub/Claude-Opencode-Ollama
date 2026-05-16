@@ -176,14 +176,16 @@ try:
             model_id = m.get('id', '')
             if not model_id:
                 continue
-            # Build human-readable display names
+            # Use anthropic/ prefix — Claude Code's picker only shows models with this prefix
             if model_id.startswith('gh-copilot/'):
                 name = model_id[len('gh-copilot/'):]
+                gateway_id = f'anthropic/gh-copilot/{name}'
                 display = f'GitHub Copilot / {name}'
             else:
-                # OpenCode Zen model (bare name, no prefix)
+                # OpenCode Zen model (bare name)
+                gateway_id = f'anthropic/opencode/{model_id}'
                 display = f'opencode / {model_id}'
-            proxy_models.append({'id': model_id, 'display_name': display})
+            proxy_models.append({'id': gateway_id, 'display_name': display})
 except Exception as e:
     proxy_models = []
 
