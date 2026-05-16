@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# run-claude-opencode: Launch Claude Code with OpenCode Proxy
+# Features:
+#   - Interactive model picker (all 21+ proxy models)
+#   - Automatic proxy startup
+#   - Direct model selection before launching Claude Code
+#
+# USAGE:
+#   run-claude-opencode                    # Show interactive picker (all models)
+#   run-claude-opencode gpt-4o            # Use specific model directly
+#   run-claude-opencode -m minimax-m2.7   # Use specific model (alt syntax)
+
+set -e
+
+PROXY_CONFIG_DIR="$HOME/.claude-proxy"
+PROXY_SETTINGS="$PROXY_CONFIG_DIR/settings.json"
+PROXY_URL="http://127.0.0.1:4001"
+REPO_DIR="$HOME/Claude-Opencode-Ollama"
+
+# Pick python binary that works (3.11 avoids 3.14 build issues)
+PYTHON_BIN=$(which python3.11 2>/dev/null || which python3 2>/dev/null || echo "python3")
+
+# Parse arguments
+MODEL_ARG=""
+EXTRA_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m|--model)
+      MODEL_ARG="$2"
+      shift 2
+      ;;
+    *)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# If first extra arg looks like a model name (not a flag), treat as model
+if [[ -z "$MODEL_ARG" && ${#EXTRA_ARGS[@]} -gt 0 && "${EXTRA_ARGS[0]}" != -* ]]; then
+  MODEL_ARG="${EXTRA_ARGS[0]}"
+  EXTRA_ARGS=("${EXTRA_ARGS[@]:1}")
+fi
+
+# Ensure config exists
+if [ ! -f "$PROXY_SETTINGS" ]; then
+  echo "❌ Proxy settings not found: $PROXY_SETTINGS"
+  exit 1
+fi
+
+# Ensure proxy is running
+if ! nc -zv 127.0.0.1 4001 > /dev/null 2>&1; then
+  echo "🚀 Starting proxy server..."
+  cd "$REPO_DIR"
+  node opencode-proxy-server.js > /tmp/opencode-proxy.log 2>&1 &
+  
+  echo "⏳ Waiting for proxy to start..."
+  for i in {1..30}; do
+    if nc -zv 127.0.0.1 4001 > /dev/null 2>&1; then
+      echo "✅ Proxy is running"
+      break
+    fi
+    if [ $i -eq 30 ]; then
+      echo "❌ Proxy failed to start. Check: /tmp/opencode-proxy.log"
+      exit 1
+    fi
+    sleep 1
+  done
+fi
+
+# If no model specified, show interactive picker
+if [[ -z "$MODEL_ARG" ]]; then
+  echo ""
+  echo "╔════════════════════════════════════════════════════════════════╗"
+  echo "║      Claude Code — PROXY MODE                                  ║"
+  echo "║      Proxy: http://127.0.0.1:4001                              ║"
+  echo "║      Dashboard: http://127.0.0.1:4001                          ║"
+  echo "╚════════════════════════════════════════════════════════════════╝"
+  echo ""
+
+  # Fetch ALL models from proxy
+  MODELS=$("$PYTHON_BIN" -c "
+import json, urllib.request
+try:
+  with urllib.request.urlopen('http://127.0.0.1:4001/v1/models', timeout=5) as r:
+    d = json.loads(r.read().decode())
+    for m in d.get('data', []):
+      print(m['id'])
+except Exception as e:
+  pass
+" 2>/dev/null)
+
+  if [[ -z "$MODELS" ]]; then
+    echo "⚠️  Could not fetch models from proxy. Using default: gpt-4o"
+    MODEL_ARG="gpt-4o"
+  else
+    echo "🤖 Select a model:"
+    echo ""
+    
+    declare -a model_array
+    index=0
+    while IFS= read -r model; do
+      [[ -z "$model" ]] && continue
+      model_array[$index]="$model"
+      printf "  %2d. %s\n" $((index + 1)) "$model"
+      index=$((index + 1))
+    done <<< "$MODELS"
+    
+    TOTAL=${#model_array[@]}
+    echo ""
+    read -r -p "Choice (1-${TOTAL}) or model name [press Enter for gpt-4o]: " choice
+    
+    if [[ -z "$choice" ]]; then
+      MODEL_ARG="gpt-4o"
+    elif [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le $TOTAL ]]; then
+      MODEL_ARG="${model_array[$((choice - 1))]}"
+    else
+      MODEL_ARG="$choice"
+    fi
+  fi
+fi
+
+echo ""
+echo "▶  Model:  $MODEL_ARG"
+echo "   Proxy:  $PROXY_URL"
+echo ""
+
+# Build temp settings JSON with selected model
+TEMP_SETTINGS=$(mktemp /tmp/claude-proxy-settings.XXXXXX)
+"$PYTHON_BIN" - <<PYEOF
+import json
+with open("$PROXY_SETTINGS") as f:
+    settings = json.load(f)
+settings["model"] = "$MODEL_ARG"
+with open("$TEMP_SETTINGS", "w") as f:
+    json.dump(settings, f, indent=2)
+PYEOF
+
+# Launch Claude with proxy settings (exec replaces this process)
+exec claude --settings "$TEMP_SETTINGS" "${EXTRA_ARGS[@]}"
