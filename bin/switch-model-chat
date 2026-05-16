@@ -1,0 +1,93 @@
+#!/bin/bash
+# switch-model-chat — Safe model switcher for inside Claude Code (NO fzf, NO TTY needed)
+# Usage:
+#   switch-model-chat          → shows numbered list
+#   switch-model-chat list     → same, shows numbered list  
+#   switch-model-chat <number> → switch by number from list
+#   switch-model-chat <name>   → switch by model name directly
+
+ACTIVE="$HOME/.claude/active-model"
+PROXY_URL="http://127.0.0.1:4001"
+
+_current_model() {
+  [[ ! -f "$ACTIVE" ]] && echo "none" && return
+  local c; c=$(cat "$ACTIVE" | tr -d '\n')
+  if [[ "$c" == "{"* ]]; then
+    echo "$c" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('model','none'))" 2>/dev/null || echo "none"
+  else
+    echo "${c:-none}"
+  fi
+}
+
+_fetch_models() {
+  local data; data=$(curl -sf --max-time 5 "$PROXY_URL/v1/models" 2>/dev/null)
+  if [[ -z "$data" ]]; then
+    echo "⚠️  Proxy not running at $PROXY_URL" >&2
+    echo "   Start it: cd ~/Claude-Opencode-Ollama && node opencode-proxy-server.js &" >&2
+    return 1
+  fi
+  echo "$data"
+}
+
+_set_model() {
+  local id="$1"
+  [[ -z "$id" ]] && echo "Usage: switch-model-chat <model-id>" && exit 1
+  mkdir -p "$(dirname "$ACTIVE")"
+  printf "%s" "$id" > "$ACTIVE"
+  echo "✅ Switched to: $id"
+  echo "   Your NEXT message will use this model."
+}
+
+show_list() {
+  local data; data=$(_fetch_models) || exit 1
+  local cur; cur=$(_current_model)
+  echo "$data" | python3 -c "
+import sys, json
+cur = '$cur'
+data = json.load(sys.stdin)
+print(f'Active model: {cur}')
+print()
+idx = 1
+for m in data.get('data', []):
+    mid  = m.get('id', '')
+    rate = m.get('x_copilot_rate')
+    if not mid: continue
+    if rate == 0:          rate_str = '[FREE]'
+    elif rate is not None: rate_str = f'[{rate}x]'
+    else:                  rate_str = ''
+    mark = '<<' if mid == cur else '  '
+    print(f'{mark} {idx:>2}. {mid:<44} {rate_str}')
+    idx += 1
+print()
+print('Reply with the number (e.g. 5) or model name to switch.')
+"
+}
+
+# Dispatch — NO fzf anywhere in this script
+case "${1:-list}" in
+  list|ls|-l|"")
+    show_list
+    ;;
+  *)
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+      data=$(_fetch_models) || exit 1
+      model_id=$(echo "$data" | python3 -c "
+import sys, json
+idx = int(sys.argv[1]) - 1
+data = json.load(sys.stdin)
+models = [m['id'] for m in data.get('data', []) if m.get('id')]
+if 0 <= idx < len(models):
+    print(models[idx])
+else:
+    print('')
+" "$1")
+      if [[ -z "$model_id" ]]; then
+        echo "⚠️  No model at index $1. Run this command with no args to see the list."
+        exit 1
+      fi
+      _set_model "$model_id"
+    else
+      _set_model "$1"
+    fi
+    ;;
+esac

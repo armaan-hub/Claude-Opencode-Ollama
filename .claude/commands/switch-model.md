@@ -1,32 +1,28 @@
 ---
-allowed-tools: Bash(~/bin/switch-model list), Bash(~/bin/switch-model *)
-description: Show all models and switch to one. Usage: /switch-model
+allowed-tools: Bash(~/bin/switch-model-chat), Bash(~/bin/switch-model-chat *)
+description: List all models and switch. Usage: /switch-model
 ---
 
-## Your Task
-
-**Step 1 — Run this exact command and paste the FULL output verbatim:**
+Run this command IMMEDIATELY with no other steps first:
 
 ```bash
-~/bin/switch-model list
+~/bin/switch-model-chat
 ```
 
-Do NOT summarize, shorten, or reformat the output. Paste it exactly as-is.
+Print the FULL output exactly as returned — do not summarize or shorten it.
 
-**Step 2 — Ask:**
+Then ask the user: **"Which model? Type a number or the full model name."**
 
-"Which model do you want? Type a **number** (e.g. `5`) or the full model name."
-
-**Step 3 — When the user replies, run:**
+When the user replies with a number or name, run:
 
 ```bash
-~/bin/switch-model <their_answer>
+~/bin/switch-model-chat <their_answer>
 ```
 
-Paste the exact output. Then say: "✅ Done. Your **next message** will use that model."
+Print the exact output. Done.
 
----
-**Rules:**
-- ONLY run `~/bin/switch-model list` in Step 1 — nothing else
-- NEVER run `~/bin/switch-model` without arguments
-- NEVER generate your own model list from memory
+RULES (must follow exactly):
+- The ONLY commands you may run are `~/bin/switch-model-chat` (no args) and `~/bin/switch-model-chat <arg>`
+- Never run `~/bin/switch-model` — that script hangs
+- Never generate a model list from memory
+- Never open a terminal window or use osascript
