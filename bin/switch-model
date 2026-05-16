@@ -1,0 +1,157 @@
+#!/bin/bash
+# switch-model — Live model switcher for Claude Code proxy
+#
+# Usage:
+#   switch-model              → fzf arrow-key picker (needs terminal TTY)
+#   switch-model list         → numbered list (safe inside Claude Code bash tool)
+#   switch-model <model-name> → switch directly (e.g. switch-model opencode/gpt-4o)
+#   switch-model <number>     → switch by number from last list output
+#   switch-model status       → show current active model
+#
+# The proxy reads ~/.claude/active-model on EVERY request — no restart needed.
+# Your NEXT message to Claude will use the new model.
+
+ACTIVE="$HOME/.claude/active-model"
+PROXY_URL="http://127.0.0.1:4001"
+
+_current_model() {
+  if [[ ! -f "$ACTIVE" ]]; then echo "none"; return; fi
+  local c; c=$(cat "$ACTIVE" | tr -d '\n')
+  if [[ "$c" == "{"* ]]; then
+    echo "$c" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('model','none'))" 2>/dev/null || echo "none"
+  else
+    echo "${c:-none}"
+  fi
+}
+
+_fetch_models() {
+  local data; data=$(curl -sf --max-time 5 "$PROXY_URL/v1/models" 2>/dev/null)
+  if [[ -z "$data" ]]; then
+    echo "⚠️  Proxy not running at $PROXY_URL" >&2
+    echo "   Start it: cd ~/Claude-Opencode-Ollama && node opencode-proxy-server.js &" >&2
+    return 1
+  fi
+  echo "$data"
+}
+
+_set_model() {
+  local id="$1"
+  [[ -z "$id" ]] && echo "Usage: switch-model <model-id>" && exit 1
+  mkdir -p "$(dirname "$ACTIVE")"
+  printf "%s" "$id" > "$ACTIVE"
+  echo "✅ Switched to: $id"
+  echo "   → Your NEXT message will use this model"
+}
+
+cmd_list() {
+  local data; data=$(_fetch_models) || exit 1
+  local cur; cur=$(_current_model)
+  echo "$data" | python3 -c "
+import sys, json
+cur = '$cur'
+data = json.load(sys.stdin)
+print(f'Active model: {cur}\n')
+idx = 1
+for m in data.get('data', []):
+    mid  = m.get('id', '')
+    rate = m.get('x_copilot_rate')
+    if not mid: continue
+    if rate == 0:          rate_str = 'FREE'
+    elif rate is not None: rate_str = f'{rate}x'
+    else:                  rate_str = ''
+    mark = '✓' if mid == cur else ' '
+    print(f'  {mark} {idx:>2}. {mid:<44}  {rate_str}')
+    idx += 1
+print(f'\nTo switch: type the number or model name shown above')
+"
+}
+
+cmd_pick_fzf() {
+  local data; data=$(_fetch_models) || exit 1
+  local cur; cur=$(_current_model)
+  local lines
+  lines=$(echo "$data" | python3 -c "
+import sys, json
+cur = sys.argv[1]
+data = json.load(sys.stdin)
+for m in data.get('data', []):
+    mid   = m.get('id', '')
+    owner = m.get('owned_by', 'other')
+    rate  = m.get('x_copilot_rate')
+    if not mid: continue
+    if rate == 0:          rate_str = '0x'
+    elif rate is not None: rate_str = f'{rate}x'
+    else:                  rate_str = '  '
+    active = '✓' if mid == cur else ' '
+    print(f'{active}  {mid:<42} {rate_str:<7}  {owner}')
+" "$cur")
+
+  [[ -z "$lines" ]] && echo "No models returned." && exit 1
+  local count; count=$(echo "$lines" | grep -c . 2>/dev/null || echo 0)
+  local selected
+  selected=$(echo "$lines" | fzf \
+    --ansi \
+    --prompt="  Search models... " \
+    --pointer="▶" \
+    --marker="✓" \
+    --height=100% \
+    --layout=reverse \
+    --border=rounded \
+    --border-label=" ⚡ Switch Model (live — no restart needed) " \
+    --border-label-pos=3 \
+    --info=inline \
+    --header="  ↑↓ arrows · type to search · Enter to select · Esc to cancel
+  ✓ = currently active                   Rate: 0x=FREE  0.33x  1x  7.5x  15x
+  ──────────────────────────────────────────────────────────────────────────
+  Active: $cur   ($count models)" \
+    --header-first \
+    --bind "ctrl-c:abort,esc:abort" \
+    --no-preview) || true
+
+  if [[ -z "$selected" ]]; then echo "Cancelled — no change."; exit 0; fi
+  local model_id; model_id=$(echo "$selected" | awk '{print $2}')
+  _set_model "$model_id"
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+  list|ls|-l)
+    cmd_list
+    ;;
+  status|-s)
+    echo "Active model: $(_current_model)"
+    ;;
+  fzf|--fzf|-i)
+    # Explicit fzf mode — only call this from a real terminal
+    if command -v fzf &>/dev/null; then
+      cmd_pick_fzf
+    else
+      echo "⚠️  fzf not found. Falling back to list:" && cmd_list
+    fi
+    ;;
+  "")
+    # No args: always show the safe numbered list (never launch fzf automatically)
+    cmd_list
+    ;;
+  *)
+    # Could be a direct model name OR a number from a previous list
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+      data=$(_fetch_models) || exit 1
+      model_id=$(echo "$data" | python3 -c "
+import sys, json
+idx = int(sys.argv[1]) - 1
+data = json.load(sys.stdin)
+models = [m['id'] for m in data.get('data', []) if m.get('id')]
+if 0 <= idx < len(models):
+    print(models[idx])
+" "$1")
+      if [[ -z "$model_id" ]]; then
+        echo "⚠️  No model at index $1. Run: switch-model list"
+        exit 1
+      fi
+      _set_model "$model_id"
+    else
+      _set_model "$1"
+    fi
+    ;;
+esac
