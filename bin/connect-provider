@@ -1,0 +1,217 @@
+#!/bin/bash
+# connect-provider — Connect/disconnect AI providers to the Claude-Opencode proxy
+#
+# Usage (inside Claude Code with ! prefix — instant, zero tokens):
+#   !~/bin/connect-provider                       → show status table
+#   !~/bin/connect-provider status                → status table only
+#   !~/bin/connect-provider gemini AIzaXXXX       → connect Google Gemini
+#   !~/bin/connect-provider groq gsk_XXXX         → connect Groq
+#   !~/bin/connect-provider openai sk-XXXX        → connect OpenAI
+#   !~/bin/connect-provider nvidia nvapi-XXXX     → connect Nvidia NIM
+#   !~/bin/connect-provider openrouter sk-or-XXX  → connect OpenRouter
+#   !~/bin/connect-provider copilot               → connect via gh CLI OAuth
+#   !~/bin/connect-provider disconnect groq       → disconnect a provider
+
+PROXY_URL="http://127.0.0.1:4001"
+REPO_DIR="$HOME/Claude-Opencode-Ollama"
+
+ensure_proxy() {
+  if ! curl -sf --max-time 2 "$PROXY_URL/health" >/dev/null 2>&1; then
+    echo "  ⏳ Proxy not running, starting..."
+    cd "$REPO_DIR" || { echo "  ❌ Could not find $REPO_DIR"; exit 1; }
+    nohup node opencode-proxy-server.js > /tmp/opencode-proxy.log 2>&1 &
+    for i in {1..15}; do
+      sleep 1
+      curl -sf --max-time 1 "$PROXY_URL/health" >/dev/null 2>&1 && echo "  ✅ Proxy started" && return
+    done
+    echo "  ❌ Proxy failed to start — check: /tmp/opencode-proxy.log"
+    exit 1
+  fi
+}
+
+show_status() {
+  ensure_proxy
+  local data; data=$(curl -sf --max-time 5 "$PROXY_URL/api/providers" 2>/dev/null) || {
+    echo "  ❌ Could not reach proxy at $PROXY_URL"
+    exit 1
+  }
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════╗"
+  echo "║              PROVIDER CONNECTION STATUS                  ║"
+  echo "╚══════════════════════════════════════════════════════════╝"
+  echo ""
+  echo "$data" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for i, p in enumerate(data.get('providers', []), 1):
+    pid     = p.get('id', '')
+    name    = p.get('name', pid)
+    conn    = p.get('connected', False)
+    mcount  = p.get('modelCount', 0)
+    reqs    = p.get('requestCount', 0)
+    note    = p.get('note', '')
+    key_url = p.get('getKeyUrl', '')
+    mark    = '✅' if conn else '❌'
+    if conn:
+        parts = []
+        if mcount: parts.append(f'{mcount} models')
+        if reqs:   parts.append(f'{reqs} reqs')
+        if note:   parts.append(f'[{note}]')
+        detail = '  ·  '.join(parts) if parts else 'connected'
+        print(f'  {i}. {mark} {name:<22} {detail}')
+    else:
+        url_hint = f'  get key → {key_url}' if key_url else ''
+        print(f'  {i}. {mark} {name:<22} —{url_hint}')
+"
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════╗"
+  echo "║  To connect:  !~/bin/connect-provider groq YOUR_KEY      ║"
+  echo "║  Copilot:     !~/bin/connect-provider copilot            ║"
+  echo "╚══════════════════════════════════════════════════════════╝"
+  echo ""
+}
+
+connect_provider() {
+  local provider="$1"
+  local key="$2"
+  ensure_proxy
+
+  case "$provider" in
+    copilot|github-copilot)
+      echo ""
+      echo "  Connecting GitHub Copilot via gh CLI OAuth..."
+      if ! command -v gh &>/dev/null; then
+        echo "  ❌ gh CLI not installed."
+        echo "     macOS:  brew install gh"
+        echo "     Linux:  https://cli.github.com/manual/installation"
+        exit 1
+      fi
+      gh auth login
+      echo "  ✅ GitHub authenticated!"
+      echo "  → Switch to a Copilot model: !~/bin/switch-model-visual"
+      echo ""
+      ;;
+
+    ollama)
+      echo ""
+      echo "  ℹ️  Ollama connects automatically when running at localhost:11434"
+      echo "     Start Ollama:   ollama serve"
+      echo "     Pull a model:   ollama pull qwen3:8b"
+      echo "     Browse models:  https://ollama.com/library"
+      echo ""
+      ;;
+
+    opencode)
+      echo ""
+      echo "  ℹ️  OpenCode (free tier) is always on — no key needed."
+      echo "     Free models include: minimax-m2.5-free, ring-2.6-1t-free, nemotron-3-super-free"
+      echo "     These are already available in your model list."
+      echo ""
+      ;;
+
+    gemini|groq|openai|nvidia|openrouter)
+      if [[ -z "$key" ]]; then
+        echo ""
+        echo "  ❌ API key required."
+        echo "  Usage: !~/bin/connect-provider $provider YOUR_API_KEY"
+        case "$provider" in
+          gemini)     echo "  Get key → https://aistudio.google.com/apikey" ;;
+          groq)       echo "  Get key → https://console.groq.com/keys" ;;
+          openai)     echo "  Get key → https://platform.openai.com/api-keys" ;;
+          nvidia)     echo "  Get key → https://build.nvidia.com" ;;
+          openrouter) echo "  Get key → https://openrouter.ai/keys" ;;
+        esac
+        echo ""
+        exit 1
+      fi
+
+      echo ""
+      echo "  Connecting $provider..."
+      local result; result=$(curl -sf --max-time 10 \
+        -X POST "$PROXY_URL/api/providers/$provider/connect" \
+        -H "Content-Type: application/json" \
+        -d "{\"apiKey\":\"$key\"}" 2>/dev/null) || {
+        echo "  ❌ Proxy unreachable — check: !cat /tmp/opencode-proxy.log"
+        exit 1
+      }
+
+      local ok; ok=$(echo "$result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('ok','false'))" 2>/dev/null)
+      if [[ "$ok" == "True" ]]; then
+        local pdata; pdata=$(curl -sf --max-time 5 "$PROXY_URL/api/providers" 2>/dev/null)
+        local mcount; mcount=$(echo "$pdata" | python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+for p in data.get('providers',[]):
+    if p['id']=='$provider':
+        print(p.get('modelCount',0))
+        break
+else:
+    print(0)
+" 2>/dev/null || echo "?")
+
+        echo "  ✅ Connected! $provider · $mcount models available"
+
+        local first_model; first_model=$(curl -sf --max-time 5 "$PROXY_URL/v1/models" 2>/dev/null | python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+prefix='$provider/'
+for m in data.get('data',[]):
+    mid=m.get('id','')
+    if mid.startswith(prefix):
+        print(mid)
+        break
+" 2>/dev/null)
+        [[ -n "$first_model" ]] && echo "  → Switch to it:  !~/bin/switch-model-visual $first_model"
+        echo ""
+      else
+        local err; err=$(echo "$result" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('message','Unknown error'))" 2>/dev/null || echo "Unknown error")
+        echo "  ❌ Failed: $err"
+        echo ""
+        exit 1
+      fi
+      ;;
+
+    *)
+      echo ""
+      echo "  ❌ Unknown provider: $provider"
+      echo "  Valid providers: gemini  groq  openai  nvidia  openrouter  copilot  ollama  opencode"
+      echo "  Usage: !~/bin/connect-provider PROVIDER [API_KEY]"
+      echo ""
+      exit 1
+      ;;
+  esac
+}
+
+disconnect_provider() {
+  local provider="$1"
+  if [[ -z "$provider" ]]; then
+    echo ""
+    echo "  ❌ Specify a provider. Example: !~/bin/connect-provider disconnect groq"
+    echo "  Valid: gemini  groq  openai  nvidia  openrouter"
+    echo ""
+    exit 1
+  fi
+  ensure_proxy
+  local result; result=$(curl -sf --max-time 5 \
+    -X POST "$PROXY_URL/api/providers/$provider/disconnect" 2>/dev/null) || {
+    echo "  ❌ Proxy unreachable"
+    exit 1
+  }
+  local ok; ok=$(echo "$result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('ok','false'))" 2>/dev/null)
+  echo ""
+  [[ "$ok" == "True" ]] && echo "  ✅ Disconnected $provider" || echo "  ❌ Failed to disconnect $provider"
+  echo ""
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+  ""|status|-s)
+    show_status
+    ;;
+  disconnect|remove)
+    disconnect_provider "$2"
+    ;;
+  *)
+    connect_provider "$1" "$2"
+    ;;
+esac
