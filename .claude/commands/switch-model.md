@@ -1,30 +1,32 @@
 ---
-allowed-tools: Bash(osascript *), Bash(cat *), Bash(sleep *), Bash(echo *)
-description: Open interactive model picker in a Terminal window. Pick with arrow keys, live switch — no restart needed.
+allowed-tools: Bash(~/bin/switch-model list), Bash(~/bin/switch-model *)
+description: Show all models and switch to one. Usage: /switch-model
 ---
 
 ## Your Task
 
-Run EXACTLY these bash commands in sequence. Do NOT generate text about models from memory. Do NOT summarize. Do NOT run any other commands.
-
-**Step 1 — Show current model:**
+**Step 1 — Run this exact command and paste the FULL output verbatim:**
 
 ```bash
-echo "Current model: $(cat ~/.claude/active-model 2>/dev/null || echo 'unknown')"
+~/bin/switch-model list
 ```
 
-**Step 2 — Open the model picker in a Terminal window:**
+Do NOT summarize, shorten, or reformat the output. Paste it exactly as-is.
+
+**Step 2 — Ask:**
+
+"Which model do you want? Type a **number** (e.g. `5`) or the full model name."
+
+**Step 3 — When the user replies, run:**
 
 ```bash
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "Terminal" to do script "source ~/.zprofile 2>/dev/null; source ~/.zshrc 2>/dev/null; ~/bin/switch-model; echo; echo \"Done — you can close this window\""'
+~/bin/switch-model <their_answer>
 ```
 
-Say verbatim: "✅ **Model picker opened in Terminal window.** Use ↑↓ arrows to browse, type to search, Enter to select. Come back here after you have picked."
+Paste the exact output. Then say: "✅ Done. Your **next message** will use that model."
 
-**Step 3 — After the user says they picked a model, run:**
-
-```bash
-echo "Active model is now: $(cat ~/.claude/active-model 2>/dev/null || echo 'unknown')"
-```
-
-Say: "Your **next message** will use that model."
+---
+**Rules:**
+- ONLY run `~/bin/switch-model list` in Step 1 — nothing else
+- NEVER run `~/bin/switch-model` without arguments
+- NEVER generate your own model list from memory
