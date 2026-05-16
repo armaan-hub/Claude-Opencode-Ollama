@@ -1584,6 +1584,7 @@ const server = http.createServer((req, res) => {
       { id: 'nvidia',         name: 'Nvidia NIM',       requests: REQUEST_COUNTS.nvidia         || 0 },
       { id: 'openrouter',     name: 'OpenRouter',       requests: REQUEST_COUNTS.openrouter     || 0 },
       { id: 'ollama',         name: 'Ollama',           requests: REQUEST_COUNTS.ollama         || 0 },
+      { id: 'anthropic',      name: 'Anthropic Direct', requests: REQUEST_COUNTS.anthropic      || 0 },
     ].filter(p => p.requests > 0);
     const uptime = Math.floor((Date.now() - PROXY_START_TIME) / 1000);
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
