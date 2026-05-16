@@ -55,7 +55,8 @@ fi
 if ! nc -zv 127.0.0.1 4001 > /dev/null 2>&1; then
   echo "🚀 Starting proxy server..."
   cd "$REPO_DIR"
-  node opencode-proxy-server.js > /tmp/opencode-proxy.log 2>&1 &
+  # Start proxy detached so it survives when Claude Code closes
+  nohup node opencode-proxy-server.js > /tmp/opencode-proxy.log 2>&1 &
   
   echo "⏳ Waiting for proxy to start..."
   for i in {1..30}; do
@@ -77,51 +78,100 @@ if [[ -z "$MODEL_ARG" ]]; then
   echo "╔════════════════════════════════════════════════════════════════╗"
   echo "║      Claude Code — PROXY MODE                                  ║"
   echo "║      Proxy: http://127.0.0.1:4001                              ║"
-  echo "║      Dashboard: http://127.0.0.1:4001                          ║"
   echo "╚════════════════════════════════════════════════════════════════╝"
   echo ""
 
-  # Fetch ALL models from proxy
-  MODELS=$("$PYTHON_BIN" -c "
-import json, urllib.request
-try:
-  with urllib.request.urlopen('http://127.0.0.1:4001/v1/models', timeout=5) as r:
-    d = json.loads(r.read().decode())
-    for m in d.get('data', []):
-      print(m['id'])
-except Exception as e:
-  pass
-" 2>/dev/null)
+  # Fetch models from proxy
+  MODELS_JSON=$(curl -sf --max-time 5 "$PROXY_URL/v1/models" 2>/dev/null)
 
-  if [[ -z "$MODELS" ]]; then
+  if [[ -z "$MODELS_JSON" ]]; then
     echo "⚠️  Could not fetch models from proxy. Using default: gpt-4o"
     MODEL_ARG="gpt-4o"
   else
-    echo "🤖 Select a model:"
-    echo ""
-    
-    declare -a model_array
-    index=0
-    while IFS= read -r model; do
-      [[ -z "$model" ]] && continue
-      model_array[$index]="$model"
-      printf "  %2d. %s\n" $((index + 1)) "$model"
-      index=$((index + 1))
-    done <<< "$MODELS"
-    
-    TOTAL=${#model_array[@]}
-    echo ""
-    read -r -p "Choice (1-${TOTAL}) or model name [press Enter for gpt-4o]: " choice
-    
-    if [[ -z "$choice" ]]; then
-      MODEL_ARG="gpt-4o"
-    elif [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le $TOTAL ]]; then
-      MODEL_ARG="${model_array[$((choice - 1))]}"
+    # Read current active model for pre-selection indicator
+    CURRENT_MODEL=""
+    if [[ -f "$HOME/.claude/active-model" ]]; then
+      _content=$(cat "$HOME/.claude/active-model" | tr -d '\n')
+      if [[ "$_content" == "{"* ]]; then
+        CURRENT_MODEL=$(echo "$_content" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('model',''))" 2>/dev/null || echo "")
+      else
+        CURRENT_MODEL="$_content"
+      fi
+    fi
+
+    # Build display lines (model-id + rate + owner)
+    LINES=$(echo "$MODELS_JSON" | "$PYTHON_BIN" -c "
+import sys, json
+cur = '$CURRENT_MODEL'
+data = json.load(sys.stdin)
+for m in data.get('data', []):
+    mid   = m.get('id', '')
+    owner = m.get('owned_by', 'other')
+    rate  = m.get('x_copilot_rate')
+    if not mid: continue
+    if rate == 0:          rate_str = '0x'
+    elif rate is not None: rate_str = f'{rate}x'
+    else:                  rate_str = '  '
+    active = '✓' if mid == cur else ' '
+    print(f'{active}  {mid:<42} {rate_str:<7}  {owner}')
+")
+
+    MODEL_COUNT=$(echo "$LINES" | grep -c . 2>/dev/null || echo "0")
+    FZF_BIN=$(which fzf 2>/dev/null || echo "")
+
+    if [[ -n "$FZF_BIN" ]]; then
+      # Interactive fzf arrow-key picker
+      SELECTED=$(echo "$LINES" | "$FZF_BIN" \
+        --ansi \
+        --prompt="  Search models... " \
+        --pointer="▶" \
+        --marker="✓" \
+        --height=50% \
+        --layout=reverse \
+        --border=rounded \
+        --border-label=" ⚡ Select Model " \
+        --border-label-pos=3 \
+        --info=inline \
+        --header="  ↑↓ arrows · type to search · Enter to select   ✓ = last used   0x=FREE
+  Active: ${CURRENT_MODEL:-none}   ($MODEL_COUNT models available)" \
+        --header-first \
+        --bind "ctrl-c:abort,esc:abort" \
+        --no-preview) || true
+
+      if [[ -z "$SELECTED" ]]; then
+        echo "Cancelled."
+        exit 0
+      fi
+      MODEL_ARG=$(echo "$SELECTED" | awk '{print $2}')
     else
-      MODEL_ARG="$choice"
+      # Fallback: numbered list (fzf not installed)
+      declare -a model_array
+      index=0
+      while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        mid=$(echo "$line" | awk '{print $2}')
+        model_array[$index]="$mid"
+        printf "  %2d. %s\n" $((index + 1)) "$line"
+        index=$((index + 1))
+      done <<< "$LINES"
+
+      TOTAL=${#model_array[@]}
+      echo ""
+      read -r -p "Choice (1-${TOTAL}) or model name [Enter = ${CURRENT_MODEL:-gpt-4o}]: " choice
+
+      if [[ -z "$choice" ]]; then
+        MODEL_ARG="${CURRENT_MODEL:-gpt-4o}"
+      elif [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 && $choice -le $TOTAL ]]; then
+        MODEL_ARG="${model_array[$((choice - 1))]}"
+      else
+        MODEL_ARG="$choice"
+      fi
     fi
   fi
 fi
+
+# Persist selected model — proxy reads this file on every request
+printf "%s" "$MODEL_ARG" > "$HOME/.claude/active-model"
 
 echo ""
 echo "▶  Model:  $MODEL_ARG"
@@ -129,7 +179,7 @@ echo "   Proxy:  $PROXY_URL"
 echo ""
 
 # Build temp settings JSON with selected model
-TEMP_SETTINGS=$(mktemp /tmp/claude-proxy-settings.XXXXXX)
+TEMP_SETTINGS=$(mktemp /tmp/claude-proxy-settings-XXXXXX)
 "$PYTHON_BIN" - <<PYEOF
 import json
 with open("$PROXY_SETTINGS") as f:
