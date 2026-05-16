@@ -1,18 +1,16 @@
 ---
-allowed-tools: Bash(~/bin/switch-model-chat), Bash(~/bin/switch-model-chat *)
+allowed-tools: Bash(~/bin/switch-model-visual), Bash(~/bin/switch-model-visual *)
 description: "Switch model. Use: /switch-model [number] e.g. /switch-model 5"
 ---
 
-Run exactly one command and paste ALL output. No explanation, no reasoning.
+Run exactly one command and print all output. No explanation.
 
-If $ARGUMENTS is set (user gave a number or name):
+If $ARGUMENTS is set:
 ```bash
-~/bin/switch-model-chat $ARGUMENTS
+~/bin/switch-model-visual $ARGUMENTS
 ```
 
 Otherwise:
 ```bash
-~/bin/switch-model-chat
+~/bin/switch-model-visual
 ```
-
-After printing output, stop. Do not add any other text.

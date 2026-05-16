@@ -1,0 +1,79 @@
+#!/bin/bash
+PROXY_URL="http://127.0.0.1:4001"
+ACTIVE="$HOME/.claude/active-model"
+
+_current() {
+  [[ ! -f "$ACTIVE" ]] && echo "none" && return
+  cat "$ACTIVE" | tr -d '\n'
+}
+
+_fetch() {
+  curl -sf --max-time 5 "$PROXY_URL/v1/models" 2>/dev/null
+}
+
+show_list() {
+  local data; data=$(_fetch) || { echo "❌ Proxy down"; exit 1; }
+  local cur; cur=$(_current)
+  
+  echo "┌────────────────────────────────────────────────────────────────────┐"
+  echo "│                    SELECT YOUR AI MODEL                            │"
+  echo "└────────────────────────────────────────────────────────────────────┘"
+  echo ""
+  
+  echo "$data" | python3 -c "
+import sys, json
+cur = '$cur'
+data = json.load(sys.stdin)
+idx = 1
+for m in data.get('data', []):
+    mid = m.get('id', '')
+    rate = m.get('x_copilot_rate')
+    if not mid: continue
+    if rate == 0:          rate_str = '[FREE]'
+    elif rate is not None: rate_str = f'[{rate}x]'
+    else:                  rate_str = ''
+    mark = '➤ ' if mid == cur else '  '
+    print(f'{mark}{idx:>2}. {mid:<45} {rate_str}')
+    idx += 1
+"
+  
+  echo ""
+  echo "┌────────────────────────────────────────────────────────────────────┐"
+  echo "│ To switch:  type  /switch-model NUMBER   (e.g: /switch-model 5)    │"
+  echo "└────────────────────────────────────────────────────────────────────┘"
+}
+
+_set() {
+  local id="$1"
+  [[ -z "$id" ]] && echo "Error: no model" && exit 1
+  if [[ "$id" =~ ^[0-9]*x$ ]] || [[ "$id" == "FREE" ]]; then
+    echo "❌ Invalid: '$id' is a rate label, not a model"
+    exit 1
+  fi
+  if ! [[ "$id" =~ [a-zA-Z] ]]; then
+    echo "❌ Invalid: '$id' is not a valid model ID"
+    exit 1
+  fi
+  printf "%s" "$id" > "$ACTIVE"
+  echo "✅ Switched to: $id"
+}
+
+case "${1:-list}" in
+  list|"") show_list ;;
+  *)
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+      data=$(_fetch) || exit 1
+      mid=$(echo "$data" | python3 -c "
+import sys, json
+idx = int('$1') - 1
+data = json.load(sys.stdin)
+models = [m['id'] for m in data.get('data', []) if m.get('id')]
+print(models[idx] if 0 <= idx < len(models) else '')
+")
+      [[ -z "$mid" ]] && echo "❌ No model at #$1" && exit 1
+      _set "$mid"
+    else
+      _set "$1"
+    fi
+    ;;
+esac
