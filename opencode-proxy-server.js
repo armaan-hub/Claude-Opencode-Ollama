@@ -953,6 +953,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="panel-hdr"><span>🤖</span><span class="panel-title">Model Summary</span></div>
         <div class="panel-body" id="d-summary">Loading…</div>
       </div>
+      <div class="panel">
+        <div class="panel-hdr" style="display:flex;align-items:center;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span>⚡</span><span class="panel-title">Live Stats</span></span><button onclick="loadStats()" style="background:none;border:1px solid #30363d;color:#8b949e;cursor:pointer;padding:2px 10px;border-radius:4px;font-size:11px">↻ Refresh</button></div>
+        <div class="panel-body" id="d-stats">Loading…</div>
+      </div>
     </div>
     <div id="sec-logs" style="display:none">
       <div class="section-title">Live Logs</div>
@@ -1085,18 +1089,27 @@ function show(id,navEl){
   if(id==='logs'&&!logEs)startLogs();
   if(id==='copilot')loadCopilotStatus();
 }
+let _configRetried=false;
 async function loadConfig(){
-  cfg=await(await fetch('/api/config')).json();
-  document.getElementById('d-go').textContent=(cfg.goModels||[]).length;
-  document.getElementById('d-free').textContent=(cfg.freeModels||[]).length;
-  document.getElementById('d-keys').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go Plan: <code style="color:#58a6ff">'+cfg.apiKeyGo+'</code><br>Free Zen: <code style="color:#3fb950">'+cfg.apiKeyFree+'</code></div>';
-  document.getElementById('d-summary').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go models: <strong style="color:#58a6ff">'+(cfg.goModels||[]).length+'</strong> &nbsp;·&nbsp; Free models: <strong style="color:#3fb950">'+(cfg.freeModels||[]).length+'</strong> &nbsp;·&nbsp; No-vision: <strong style="color:#d29922">'+(cfg.nonVisionModels||[]).length+'</strong></div>';
-  document.getElementById('inp-go').value=cfg.apiKeyGo||'';
-  document.getElementById('inp-free').value=cfg.apiKeyFree||'';
-  document.getElementById('inp-groq').value=cfg.groqApiKey||'';
-  document.getElementById('inp-nvidia').value=cfg.nvidiaApiKey||'';
-  document.getElementById('inp-openrouter').value=cfg.openrouterApiKey||'';
-  renderModels();
+  try{
+    cfg=await(await fetch('/api/config')).json();
+    document.getElementById('d-go').textContent=(cfg.goModels||[]).length;
+    document.getElementById('d-free').textContent=(cfg.freeModels||[]).length;
+    document.getElementById('d-keys').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go Plan: <code style="color:#58a6ff">'+cfg.apiKeyGo+'</code><br>Free Zen: <code style="color:#3fb950">'+cfg.apiKeyFree+'</code></div>';
+    document.getElementById('d-summary').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go models: <strong style="color:#58a6ff">'+(cfg.goModels||[]).length+'</strong> &nbsp;·&nbsp; Free models: <strong style="color:#3fb950">'+(cfg.freeModels||[]).length+'</strong> &nbsp;·&nbsp; No-vision: <strong style="color:#d29922">'+(cfg.nonVisionModels||[]).length+'</strong></div>';
+    document.getElementById('inp-go').value=cfg.apiKeyGo||'';
+    document.getElementById('inp-free').value=cfg.apiKeyFree||'';
+    document.getElementById('inp-groq').value=cfg.groqApiKey||'';
+    document.getElementById('inp-nvidia').value=cfg.nvidiaApiKey||'';
+    document.getElementById('inp-openrouter').value=cfg.openrouterApiKey||'';
+    renderModels();
+    _configRetried=false;
+  } catch(e) {
+    const errHtml='<div style="font-size:12px;color:#f85149">❌ Failed to load — <button onclick="loadConfig()" style="background:none;border:1px solid #f85149;color:#f85149;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:11px">Retry</button></div>';
+    document.getElementById('d-keys').innerHTML=errHtml;
+    document.getElementById('d-summary').innerHTML=errHtml;
+    if(!_configRetried){_configRetried=true;setTimeout(loadConfig,1500);}
+  }
 }
 function renderModels(){['go','free','nv'].forEach(cls=>{const key=cls==='go'?'goModels':cls==='free'?'freeModels':'nonVisionModels';const container=document.getElementById('tags-'+cls);container.innerHTML='';(cfg[key]||[]).forEach((m,i)=>{const span=document.createElement('span');span.className='tag '+cls;const dot=document.createElement('span');dot.className='dot-sm';const label=document.createTextNode(m);const x=document.createElement('span');x.className='tag-x';x.textContent='✕';x.onclick=()=>removeTag(key,cls,i);span.append(dot,label,x);container.appendChild(span);});});}
 function removeTag(key,cls,idx){cfg[key].splice(idx,1);renderModels();}
@@ -1142,7 +1155,28 @@ async function logoutCopilot(){
   if(j.ok)loadCopilotStatus();
 }
 function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(err?' error':'');setTimeout(()=>el.className='toast',3000);}
+async function loadStats(){
+  try{
+    const j=await(await fetch('/api/stats')).json();
+    const upMin=Math.floor((j.uptime||0)/60);
+    const upStr=upMin<60?upMin+'m uptime':Math.floor(upMin/60)+'h '+upMin%60+'m uptime';
+    let html='<div style="font-size:12px;color:#8b949e;line-height:2">';
+    html+='Active model: <code style="color:#58a6ff">'+(j.activeModel||'none')+'</code><br>';
+    html+='Total requests: <strong style="color:#3fb950">'+(j.totalRequests||0)+'</strong> &nbsp;·&nbsp; '+upStr;
+    if(j.providers&&j.providers.length){
+      html+='<br><span style="color:#6e7681">By provider: ';
+      html+=j.providers.map(p=>'<span style="color:#eee">'+p.name+'</span> <strong style="color:#58a6ff">'+p.requests+'</strong>').join(' &nbsp;·&nbsp; ');
+      html+='</span>';
+    }
+    html+='</div>';
+    document.getElementById('d-stats').innerHTML=html;
+  } catch(e){
+    document.getElementById('d-stats').innerHTML='<div style="font-size:12px;color:#6e7681">Stats unavailable — <button onclick="loadStats()" style="background:none;border:1px solid #444;color:#8b949e;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:11px">Retry</button></div>';
+  }
+}
 loadConfig();
+loadStats();
+setInterval(loadStats,10000);
 </script>
 </body>
 </html>`;
