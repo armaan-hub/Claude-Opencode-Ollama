@@ -1,28 +1,18 @@
 ---
 allowed-tools: Bash(~/bin/switch-model-chat), Bash(~/bin/switch-model-chat *)
-description: List all models and switch. Usage: /switch-model
+description: "Switch model. Use: /switch-model [number] e.g. /switch-model 5"
 ---
 
-Run this command IMMEDIATELY with no other steps first:
+Run exactly one command and paste ALL output. No explanation, no reasoning.
 
+If $ARGUMENTS is set (user gave a number or name):
+```bash
+~/bin/switch-model-chat $ARGUMENTS
+```
+
+Otherwise:
 ```bash
 ~/bin/switch-model-chat
 ```
 
-Print the FULL output exactly as returned — do not summarize or shorten it.
-
-Then ask the user: **"Which model? Type a number or the full model name."**
-
-When the user replies with a number or name, run:
-
-```bash
-~/bin/switch-model-chat <their_answer>
-```
-
-Print the exact output. Done.
-
-RULES (must follow exactly):
-- The ONLY commands you may run are `~/bin/switch-model-chat` (no args) and `~/bin/switch-model-chat <arg>`
-- Never run `~/bin/switch-model` — that script hangs
-- Never generate a model list from memory
-- Never open a terminal window or use osascript
+After printing output, stop. Do not add any other text.
