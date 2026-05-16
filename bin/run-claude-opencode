@@ -2,9 +2,11 @@
 
 # run-claude-opencode: Launch Claude Code with OpenCode Proxy
 # Features:
-#   - Interactive model picker (all 21+ proxy models)
+#   - Injects all 57+ proxy models into Claude Code's NATIVE "Select model" picker
+#   - Interactive terminal model picker at startup
 #   - Automatic proxy startup
-#   - Direct model selection before launching Claude Code
+#   - --dangerously-skip-permissions enabled by default
+#   - Restores original model list when Claude exits
 #
 # USAGE:
 #   run-claude-opencode                    # Show interactive picker (all models)
@@ -137,5 +139,83 @@ with open("$TEMP_SETTINGS", "w") as f:
     json.dump(settings, f, indent=2)
 PYEOF
 
-# Launch Claude with proxy settings (exec replaces this process)
-exec claude --settings "$TEMP_SETTINGS" "${EXTRA_ARGS[@]}"
+# Inject all proxy models into Claude Code's native "Select model" picker
+GATEWAY_CACHE="$HOME/.claude/cache/gateway-models.json"
+GATEWAY_ORIGINAL="$HOME/.claude/cache/gateway-models-original.json"
+
+"$PYTHON_BIN" - <<PYEOF
+import json, urllib.request, os, time, shutil
+
+gateway_cache = os.path.expanduser('~/.claude/cache/gateway-models.json')
+# Permanent original — saved once, preserved across crashes
+original_path = os.path.expanduser('~/.claude/cache/gateway-models-original.json')
+
+# On first ever run, save the true original permanently
+if not os.path.exists(original_path) and os.path.exists(gateway_cache):
+    shutil.copy2(gateway_cache, original_path)
+
+# Read original models to keep them in the picker
+if os.path.exists(original_path):
+    with open(original_path) as f:
+        orig_data = json.load(f)
+    original_models = orig_data.get('models', [])
+elif os.path.exists(gateway_cache):
+    with open(gateway_cache) as f:
+        orig_data = json.load(f)
+    original_models = orig_data.get('models', [])
+else:
+    original_models = []
+    os.makedirs(os.path.dirname(gateway_cache), exist_ok=True)
+
+# Fetch proxy models from our running proxy
+try:
+    with urllib.request.urlopen('http://127.0.0.1:4001/v1/models', timeout=5) as r:
+        data = json.loads(r.read().decode())
+        proxy_models = []
+        for m in data.get('data', []):
+            model_id = m.get('id', '')
+            if not model_id:
+                continue
+            # Build human-readable display names
+            if model_id.startswith('gh-copilot/'):
+                name = model_id[len('gh-copilot/'):]
+                display = f'GitHub Copilot / {name}'
+            else:
+                # OpenCode Zen model (bare name, no prefix)
+                display = f'opencode / {model_id}'
+            proxy_models.append({'id': model_id, 'display_name': display})
+except Exception as e:
+    proxy_models = []
+
+# Merge: proxy models first, then keep original native Claude models (deduplicate)
+seen_ids = {m['id'] for m in proxy_models}
+for m in original_models:
+    if m['id'] not in seen_ids:
+        proxy_models.append(m)
+        seen_ids.add(m['id'])
+
+# Write merged cache — Claude Code reads this for its native "Select model" picker
+new_cache = {
+    'baseUrl': 'http://127.0.0.1:4001',
+    'fetchedAt': int(time.time() * 1000),
+    'models': proxy_models
+}
+with open(gateway_cache, 'w') as f:
+    json.dump(new_cache, f, indent=2)
+
+proxy_count = len([m for m in proxy_models if not m['id'].startswith('claude-')])
+orig_count = len(original_models)
+print(f'✅ Native picker: {proxy_count} proxy models + {orig_count} original models = {len(proxy_models)} total')
+PYEOF
+
+# Cleanup function — restores original gateway-models.json when Claude exits
+cleanup_gateway() {
+  if [ -f "$GATEWAY_ORIGINAL" ]; then
+    cp "$GATEWAY_ORIGINAL" "$GATEWAY_CACHE" 2>/dev/null || true
+  fi
+  rm -f "$TEMP_SETTINGS" 2>/dev/null || true
+}
+trap cleanup_gateway EXIT
+
+# Launch Claude with proxy settings (not exec — trap must fire on exit)
+claude --settings "$TEMP_SETTINGS" --dangerously-skip-permissions "${EXTRA_ARGS[@]}"
