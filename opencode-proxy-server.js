@@ -1261,7 +1261,7 @@ button:hover{opacity:.85}
     <input id="modal-key" type="password" placeholder="Paste your API key here">
     <div class="modal-actions">
       <button class="btn-update" onclick="closeModal()">Cancel</button>
-      <button class="btn-connect" onclick="submitKey()">Save & Connect</button>
+      <button class="btn-connect" id="modal-save" onclick="submitKey()">Save & Connect</button>
     </div>
   </div>
 </div>
@@ -1289,11 +1289,12 @@ let providers = [];
 let currentProvider = null;
 
 async function load() {
+  document.getElementById('grid').innerHTML = '<div style="color:#8b949e;padding:32px;text-align:center;font-size:14px">⏳ Loading providers...</div>';
   const r = await fetch('/api/providers').catch(() => null);
-  if (!r || !r.ok) { document.getElementById('grid').textContent = '⚠️ Proxy unreachable'; return; }
+  if (!r || !r.ok) { document.getElementById('grid').innerHTML = '<div style="color:#f85149;padding:32px;text-align:center">⚠️ Proxy unreachable — <button onclick="load()" style="background:none;border:1px solid #f85149;color:#f85149;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:12px">Retry</button></div>'; return; }
   let data;
   try { data = await r.json(); }
-  catch { document.getElementById('grid').textContent = '⚠️ Invalid response from proxy'; return; }
+  catch { document.getElementById('grid').innerHTML = '<div style="color:#f85149;padding:32px;text-align:center">⚠️ Invalid response from proxy</div>'; return; }
   providers = data.providers;
 
   // Check URL params for feedback
@@ -1362,8 +1363,9 @@ function render() {
       </div>
       <div class="meta">
         \${p.modelCount ? \`<span>\${p.modelCount} models</span>\` : ''}
-        <span>\${p.requestCount} requests</span>
-        \${p.note && p.authType === 'none' ? \`<span>\${p.note}</span>\` : ''}
+        \${p.requestCount > 0 ? \`<span style="color:#3fb950">\${p.requestCount} requests this session</span>\` : \`<span style="color:#6e7681">0 requests</span>\`}
+        \${p.note && p.authType === 'none' ? \`<span style="color:#8b949e">\${p.note}</span>\` : ''}
+        \${!p.connected && p.getKeyUrl ? \`<a href="\${p.getKeyUrl}" target="_blank" style="color:#58a6ff;font-size:0.82em;text-decoration:none">→ Get API key</a>\` : ''}
       </div>
       <div class="actions">\${actions}</div>
     \`;
@@ -1392,6 +1394,8 @@ function closeModal() {
 async function submitKey() {
   const key = document.getElementById('modal-key').value.trim();
   if (!key) { toast('Please enter an API key', true); return; }
+  const btn = document.getElementById('modal-save');
+  if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
   try {
     const r = await fetch(\`/api/providers/\${currentProvider.id}/connect\`, {
       method: 'POST',
@@ -1399,9 +1403,10 @@ async function submitKey() {
       body: JSON.stringify({ apiKey: key }),
     });
     const j = await r.json();
-    if (j.ok) { closeModal(); toast('✅ ' + currentProvider.name + ' connected'); await load(); }
+    if (j.ok) { closeModal(); toast('✅ ' + currentProvider.name + ' connected!'); await load(); }
     else { toast('❌ ' + (j.message || 'Error saving key'), true); }
   } catch { toast('❌ Network error — proxy unreachable', true); }
+  finally { if (btn) { btn.textContent = 'Save & Connect'; btn.disabled = false; } }
 }
 
 async function disconnectProvider(id) {
