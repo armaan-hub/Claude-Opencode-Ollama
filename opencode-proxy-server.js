@@ -240,7 +240,12 @@ function getEndpoint(modelId) {
 function readActiveModel() {
   try {
     const content = fs.readFileSync(ACTIVE_MODEL_PATH, 'utf8').trim();
-    return content || null;
+    if (!content) return null;
+    // Handle JSON format: {"model":"...", "provider":"...", "selectedAt":"..."}
+    if (content.startsWith('{')) {
+      try { return JSON.parse(content).model || null; } catch { return null; }
+    }
+    return content;
   } catch {
     return null;
   }
