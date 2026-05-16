@@ -32,6 +32,18 @@ _fetch_models() {
 _set_model() {
   local id="$1"
   [[ -z "$id" ]] && echo "Usage: switch-model-chat <model-id>" && exit 1
+  # Guard: reject obvious non-model values (rate labels, FREE, etc.)
+  if [[ "$id" =~ ^[0-9]*x$ ]] || [[ "$id" == "FREE" ]] || [[ "$id" == "list" ]]; then
+    echo "⚠️  '$id' is not a model ID — it looks like a rate label from the list."
+    echo "   Run: switch-model-chat   (no args) to see the numbered list, then reply with a number."
+    exit 1
+  fi
+  # Guard: model IDs must contain a letter and optionally a slash
+  if ! [[ "$id" =~ [a-zA-Z] ]]; then
+    echo "⚠️  '$id' doesn't look like a valid model ID."
+    echo "   Run: switch-model-chat   (no args) to see the numbered list, then reply with a number."
+    exit 1
+  fi
   mkdir -p "$(dirname "$ACTIVE")"
   printf "%s" "$id" > "$ACTIVE"
   echo "✅ Switched to: $id"
