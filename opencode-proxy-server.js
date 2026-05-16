@@ -1294,8 +1294,8 @@ async function load() {
   if (!r || !r.ok) { document.getElementById('grid').innerHTML = '<div style="color:#f85149;padding:32px;text-align:center">⚠️ Proxy unreachable — <button onclick="load()" style="background:none;border:1px solid #f85149;color:#f85149;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:12px">Retry</button></div>'; return; }
   let data;
   try { data = await r.json(); }
-  catch { document.getElementById('grid').innerHTML = '<div style="color:#f85149;padding:32px;text-align:center">⚠️ Invalid response from proxy</div>'; return; }
-  providers = data.providers;
+  catch { document.getElementById('grid').innerHTML = '<div style="color:#f85149;padding:32px;text-align:center">⚠️ Invalid response from proxy — <button onclick="load()" style="background:none;border:1px solid #f85149;color:#f85149;cursor:pointer;padding:2px 8px;border-radius:4px;font-size:12px">Retry</button></div>'; return; }
+  providers = data.providers || [];
 
   // Check URL params for feedback
   const qs = new URLSearchParams(location.search);
