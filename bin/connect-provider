@@ -127,10 +127,11 @@ connect_provider() {
 
       echo ""
       echo "  Connecting $provider..."
+      local json_body; json_body=$(python3 -c "import json,sys; print(json.dumps({'apiKey':sys.argv[1]}))" "$key")
       local result; result=$(curl -sf --max-time 10 \
         -X POST "$PROXY_URL/api/providers/$provider/connect" \
         -H "Content-Type: application/json" \
-        -d "{\"apiKey\":\"$key\"}" 2>/dev/null) || {
+        -d "$json_body" 2>/dev/null) || {
         echo "  ❌ Proxy unreachable — check: !cat /tmp/opencode-proxy.log"
         exit 1
       }
@@ -184,6 +185,10 @@ for m in data.get('data',[]):
 
 disconnect_provider() {
   local provider="$1"
+  case "$provider" in
+    gemini|groq|openai|nvidia|openrouter) ;;
+    *) echo "  ❌ Unknown provider: ${provider:-"(none)"}. Valid: gemini groq openai nvidia openrouter"; exit 1 ;;
+  esac
   if [[ -z "$provider" ]]; then
     echo ""
     echo "  ❌ Specify a provider. Example: !~/bin/connect-provider disconnect groq"

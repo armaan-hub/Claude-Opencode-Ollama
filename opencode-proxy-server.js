@@ -1095,7 +1095,7 @@ async function loadConfig(){
     cfg=await(await fetch('/api/config')).json();
     document.getElementById('d-go').textContent=(cfg.goModels||[]).length;
     document.getElementById('d-free').textContent=(cfg.freeModels||[]).length;
-    document.getElementById('d-keys').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go Plan: <code style="color:#58a6ff">'+cfg.apiKeyGo+'</code><br>Free Zen: <code style="color:#3fb950">'+cfg.apiKeyFree+'</code></div>';
+    document.getElementById('d-keys').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go Plan: <code style="color:#58a6ff">'+esc(cfg.apiKeyGo)+'</code><br>Free Zen: <code style="color:#3fb950">'+esc(cfg.apiKeyFree)+'</code></div>';
     document.getElementById('d-summary').innerHTML='<div style="font-size:12px;color:#8b949e;line-height:2">Go models: <strong style="color:#58a6ff">'+(cfg.goModels||[]).length+'</strong> &nbsp;·&nbsp; Free models: <strong style="color:#3fb950">'+(cfg.freeModels||[]).length+'</strong> &nbsp;·&nbsp; No-vision: <strong style="color:#d29922">'+(cfg.nonVisionModels||[]).length+'</strong></div>';
     document.getElementById('inp-go').value=cfg.apiKeyGo||'';
     document.getElementById('inp-free').value=cfg.apiKeyFree||'';
@@ -1167,7 +1167,7 @@ async function loadStats(){
     html+='Total requests: <strong style="color:#3fb950">'+(j.totalRequests||0)+'</strong> &nbsp;·&nbsp; '+upStr;
     if(j.providers&&j.providers.length){
       html+='<br><span style="color:#6e7681">By provider: ';
-      html+=j.providers.map(p=>'<span style="color:#eee">'+p.name+'</span> <strong style="color:#58a6ff">'+p.requests+'</strong>').join(' &nbsp;·&nbsp; ');
+      html+=j.providers.map(p=>'<span style="color:#eee">'+esc(p.name)+'</span> <strong style="color:#58a6ff">'+p.requests+'</strong>').join(' &nbsp;·&nbsp; ');
       html+='</span>';
     }
     html+='</div>';
@@ -1353,18 +1353,18 @@ function render() {
     } else {
       actions = p.connected
         ? \`<button class="btn-info" disabled>Auto-detected</button>\`
-        : \`<span style="font-size:0.82em;color:#888">\${p.note || ''}</span>\`;
+        : \`<span style="font-size:0.82em;color:#888">\${esc(p.note || '')}</span>\`;
     }
 
     card.innerHTML = \`
       <div class="card-header">
-        <div class="card-title">\${icon} \${p.name}</div>
+        <div class="card-title">\${icon} \${esc(p.name)}</div>
         \${statusBadge}
       </div>
       <div class="meta">
         \${p.modelCount ? \`<span>\${p.modelCount} models</span>\` : ''}
         \${p.requestCount > 0 ? \`<span style="color:#3fb950">\${p.requestCount} requests this session</span>\` : \`<span style="color:#6e7681">0 requests</span>\`}
-        \${p.note && p.authType === 'none' ? \`<span style="color:#8b949e">\${p.note}</span>\` : ''}
+        \${p.note && p.authType === 'none' ? \`<span style="color:#8b949e">\${esc(p.note)}</span>\` : ''}
         \${!p.connected && p.getKeyUrl ? \`<a href="\${p.getKeyUrl}" target="_blank" style="color:#58a6ff;font-size:0.82em;text-decoration:none">→ Get API key</a>\` : ''}
       </div>
       <div class="actions">\${actions}</div>
