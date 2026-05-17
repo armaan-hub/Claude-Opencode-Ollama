@@ -1285,6 +1285,7 @@ button:hover{opacity:.85}
 <div class="toast" id="toast"></div>
 
 <script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 let providers = [];
 let currentProvider = null;
 
