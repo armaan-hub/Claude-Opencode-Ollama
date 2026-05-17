@@ -6,3 +6,6 @@ api_keys.json
 secrets/
 node_modules
 .worktrees/
+
+# Proxy config — contains API keys, never commit
+opencode-proxy-config.json
