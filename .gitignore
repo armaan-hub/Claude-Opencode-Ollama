@@ -9,3 +9,4 @@ node_modules
 
 # Proxy config — contains API keys, never commit
 opencode-proxy-config.json
+jarvis/
