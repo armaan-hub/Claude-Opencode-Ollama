@@ -2122,7 +2122,13 @@ const server = http.createServer((req, res) => {
           const anthropicModelsList = ANTHROPIC_DIRECT_API_KEY
             ? ANTHROPIC_MODELS.map(id => ({ id, object: 'model', owned_by: 'anthropic', created: 0, context_length: 200000 }))
             : [];
-          const combined = { object: 'list', data: [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList, ...anthropicModelsList] };
+          const allCombined = [...allModels, ...groqModelsList, ...nvidiaModelsList, ...openrouterModelsList, ...ollamaModelsList, ...copilotModelsList, ...geminiModelsList, ...openaiModelsList, ...anthropicModelsList];
+          // Add context_window (Anthropic field name) = context_length so Claude Code
+          // displays the correct context bar size (e.g. 1M for MiniMax, not default 200K)
+          const combined = { object: 'list', data: allCombined.map(m => ({
+            ...m,
+            context_window: m.context_window || m.context_length || 128000,
+          })) };
           res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
           res.end(JSON.stringify(combined));
         } catch {
