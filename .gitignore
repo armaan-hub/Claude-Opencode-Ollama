@@ -10,3 +10,20 @@ node_modules
 # Proxy config — contains API keys, never commit
 opencode-proxy-config.json
 jarvis/
+
+# Personal dotfiles (not part of this project)
+.zshrc
+.tmux.conf
+.config/
+
+# Other projects (keep locally, not in this repo)
+extract_invoices.py
+extract_requirements.txt
+Study/
+universal_llm/
+jarvis/
+
+# Tool-generated output
+graphify-out/
+__pycache__/
+*.pyc
