@@ -14,9 +14,10 @@ Claude Code normally only works with Anthropic models. This proxy sits between C
 4. [Configuration](#configuration)
 5. [Daily Usage](#daily-usage)
 6. [Switching Models](#switching-models)
-7. [Provider Setup](#provider-setup)
-8. [Troubleshooting](#troubleshooting)
-9. [File Reference](#file-reference)
+7. [Connecting Providers](#connecting-providers)
+8. [Provider Setup](#provider-setup)
+9. [Troubleshooting](#troubleshooting)
+10. [File Reference](#file-reference)
 
 ---
 
@@ -37,6 +38,8 @@ Claude Code  →  Local Proxy (port 4001)  →  Any AI Provider
 - 🔄 **Proxy survives Claude Code exit** — runs as a background daemon
 - 🖥️ **Interactive fzf model picker** at startup — arrow keys to select
 - 💡 **Free tier** — OpenCode provides free models (MiniMax, Ring 2.6, Nemotron, etc.) with no API key needed
+- 🔌 **Provider CLI** — connect/disconnect providers instantly with `!~/bin/connect-provider`
+- 🌐 **Web portal** — live dashboard at `http://127.0.0.1:4001` with stats and provider management
 
 ---
 
@@ -113,17 +116,19 @@ npm install
 mkdir -p ~/bin
 
 # Copy all launcher scripts
-cp bin/run-claude-opencode ~/bin/
-cp bin/switch-model        ~/bin/
-cp bin/switch-model-visual ~/bin/
-cp bin/switch-model-chat   ~/bin/
-cp bin/model               ~/bin/    # optional: alias for switch-model
+cp bin/run-claude-opencode  ~/bin/
+cp bin/switch-model         ~/bin/
+cp bin/switch-model-visual  ~/bin/
+cp bin/switch-model-chat    ~/bin/
+cp bin/connect-provider     ~/bin/
+cp bin/model                ~/bin/    # optional: alias for switch-model
 
 # Make them executable
 chmod +x ~/bin/run-claude-opencode
 chmod +x ~/bin/switch-model
 chmod +x ~/bin/switch-model-visual
 chmod +x ~/bin/switch-model-chat
+chmod +x ~/bin/connect-provider
 ```
 
 ### Step 4 — Add ~/bin to your PATH
@@ -156,7 +161,8 @@ cp opencode-proxy-config.json ~/.claude-proxy/settings.json
 
 ```bash
 mkdir -p ~/.claude/commands
-cp .claude/commands/switch-model.md ~/.claude/commands/
+cp .claude/commands/switch-model.md     ~/.claude/commands/
+cp .claude/commands/connect-provider.md ~/.claude/commands/
 ```
 
 ### Step 7 — Verify the setup
@@ -346,6 +352,85 @@ Or inside Claude Code:
 
 ---
 
+## Connecting Providers
+
+The `connect-provider` script lets you connect, disconnect, and check provider status — all as instant shell commands (zero tokens, no AI involved).
+
+### Check all provider status
+
+```bash
+# Inside Claude Code (instant)
+!~/bin/connect-provider
+
+# Or from terminal
+~/bin/connect-provider
+```
+
+Output example:
+```
+╔══════════════════════════════════════════════════════════╗
+║              PROVIDER CONNECTION STATUS                  ║
+╚══════════════════════════════════════════════════════════╝
+
+  1. ✅ GitHub Copilot         9 models
+  2. ❌ Google Gemini          —  get key → https://aistudio.google.com/apikey
+  3. ❌ OpenAI / Codex         —  get key → https://platform.openai.com/api-keys
+  4. ❌ Groq                   —  get key → https://console.groq.com/keys
+  5. ❌ NVIDIA NIM             —  get key → https://build.nvidia.com
+  6. ❌ OpenRouter             —  get key → https://openrouter.ai/keys
+  7. ✅ Ollama                 [Running on :11434]
+```
+
+### Connect a provider with an API key
+
+```bash
+!~/bin/connect-provider groq      YOUR_GROQ_KEY
+!~/bin/connect-provider gemini    YOUR_GEMINI_KEY
+!~/bin/connect-provider openai    YOUR_OPENAI_KEY
+!~/bin/connect-provider nvidia    YOUR_NVIDIA_KEY
+!~/bin/connect-provider openrouter YOUR_OPENROUTER_KEY
+```
+
+### Connect GitHub Copilot (OAuth)
+
+```bash
+!~/bin/connect-provider copilot
+# Opens browser for GitHub OAuth — token saved automatically
+```
+
+Or use the slash command:
+```
+/connect-provider copilot
+```
+
+### Disconnect a provider
+
+```bash
+!~/bin/connect-provider disconnect groq
+!~/bin/connect-provider disconnect gemini
+```
+
+### Slash commands (inside Claude Code)
+
+> ⚠️ Note: `/connect-provider` and `/switch-model` slash commands go through the AI (~15–30s).  
+> Use `!` prefix above for **instant zero-token** execution.
+
+```
+/connect-provider                    # show status table
+/connect-provider groq YOUR_KEY      # connect with key
+/connect-provider copilot            # OAuth flow
+/connect-provider disconnect groq    # disconnect
+```
+
+### Web portal
+
+Visit `http://127.0.0.1:4001` in your browser while the proxy is running to see:
+- 📊 **Dashboard** — live stats (active model, total requests, uptime)
+- 🔌 **Providers** — visual connect/disconnect UI for all providers
+- ⚙️ **Settings** — configure API keys via web form
+
+---
+
 ## Provider Setup
 
 ### OpenCode (Pre-configured — works out of the box)
@@ -363,12 +448,16 @@ OpenCode API keys are already included in the config. Free models work immediate
 
 Connect via OAuth inside Claude Code:
 
+```bash
+!~/bin/connect-provider copilot
+```
+
+Or using the slash command:
 ```
 /connect-provider copilot
 ```
 
-Or run the auth flow manually:
-
+Or manually:
 ```bash
 curl http://127.0.0.1:4001/api/auth/copilot/start
 ```
@@ -388,23 +477,31 @@ This opens a browser for GitHub OAuth. After authenticating, your token is saved
 ### Gemini (Google AI Studio)
 
 1. Get API key: https://aistudio.google.com/apikey
-2. Add to config:
+2. Connect instantly:
+   ```bash
+   !~/bin/connect-provider gemini YOUR_API_KEY
+   ```
+3. Or add to config manually:
    ```json
    "geminiApiKey": "AIza..."
    ```
-3. Switch to a Gemini model:
-   ```
+4. Switch to a Gemini model:
+   ```bash
    !~/bin/switch-model-visual gemini/gemini-2.5-pro
    ```
 
 ### Groq (Ultra-fast inference — free tier available)
 
 1. Get API key: https://console.groq.com/keys
-2. Add to config:
+2. Connect instantly:
+   ```bash
+   !~/bin/connect-provider groq YOUR_API_KEY
+   ```
+3. Or add to config manually:
    ```json
    "groqApiKey": "gsk_..."
    ```
-3. Models in config by default:
+4. Models in config by default:
    - `groq/llama-3.3-70b-versatile`
    - `groq/llama-3.1-8b-instant`
    - `groq/deepseek-r1-distill-llama-70b-32768`
@@ -412,7 +509,11 @@ This opens a browser for GitHub OAuth. After authenticating, your token is saved
 ### Nvidia NIM (Free API with NVIDIA account)
 
 1. Get API key: https://build.nvidia.com/
-2. Add to config:
+2. Connect instantly:
+   ```bash
+   !~/bin/connect-provider nvidia YOUR_API_KEY
+   ```
+3. Or add to config manually:
    ```json
    "nvidiaApiKey": "nvapi-..."
    ```
@@ -420,11 +521,15 @@ This opens a browser for GitHub OAuth. After authenticating, your token is saved
 ### OpenRouter (Access 200+ models)
 
 1. Get API key: https://openrouter.ai/keys
-2. Add to config:
+2. Connect instantly:
+   ```bash
+   !~/bin/connect-provider openrouter YOUR_API_KEY
+   ```
+3. Or add to config manually:
    ```json
    "openrouterApiKey": "sk-or-v1-..."
    ```
-3. Free models available (`:free` suffix):
+4. Free models available (`:free` suffix):
    - `openrouter/google/gemma-3-27b-it:free`
    - `openrouter/meta-llama/llama-3.3-70b-instruct:free`
    - `openrouter/deepseek/deepseek-r1:free`
@@ -432,7 +537,11 @@ This opens a browser for GitHub OAuth. After authenticating, your token is saved
 ### OpenAI
 
 1. Get API key: https://platform.openai.com/api-keys
-2. Add to config:
+2. Connect instantly:
+   ```bash
+   !~/bin/connect-provider openai YOUR_API_KEY
+   ```
+3. Or add to config manually:
    ```json
    "openaiApiKey": "sk-..."
    ```
@@ -515,6 +624,10 @@ If not, edit the file to use `nohup`.
 ### Check all providers status
 
 ```bash
+# Quick visual status (recommended)
+!~/bin/connect-provider
+
+# JSON API
 curl http://127.0.0.1:4001/api/providers | python3 -m json.tool
 ```
 
@@ -530,12 +643,13 @@ curl http://127.0.0.1:4001/api/providers | python3 -m json.tool
 | `bin/switch-model-visual` | Visual model list with `➤` marker — use with `!` prefix in Claude Code |
 | `bin/switch-model` | Full-featured switcher with fzf, list, and direct-name modes |
 | `bin/switch-model-chat` | Minimal switcher, safe for Claude Code bash tool use |
+| `bin/connect-provider` | Connect/disconnect providers by API key or OAuth |
 
 ### Proxy
 
 | File | Purpose |
 |------|---------|
-| `opencode-proxy-server.js` | Main proxy server (~2300 lines) — routes requests to providers |
+| `opencode-proxy-server.js` | Main proxy server (~2400 lines) — routes requests to providers + web portal |
 | `opencode-proxy-config.json` | Proxy configuration — API keys, models, OAuth credentials |
 
 ### Claude Code integration
@@ -543,6 +657,7 @@ curl http://127.0.0.1:4001/api/providers | python3 -m json.tool
 | File | Purpose |
 |------|---------|
 | `.claude/commands/switch-model.md` | `/switch-model` slash command definition |
+| `.claude/commands/connect-provider.md` | `/connect-provider` slash command definition |
 
 ### Key system files (not in repo)
 
@@ -558,26 +673,47 @@ curl http://127.0.0.1:4001/api/providers | python3 -m json.tool
 ## Quick Reference Card
 
 ```bash
-# Launch
+# ── Launch ────────────────────────────────────────────────────────────────
 run-claude-opencode                          # pick model at startup
 run-claude-opencode copilot/gpt-5-mini       # use specific model
 
-# Inside Claude Code (instant, no tokens)
-!~/bin/switch-model-visual                   # show model list
+# ── Switch model (inside Claude Code — instant, zero tokens) ─────────────
+!~/bin/switch-model-visual                   # show numbered model list (➤ = current)
 !~/bin/switch-model-visual 5                 # switch to model #5
 !~/bin/switch-model-visual copilot/gpt-4o    # switch by name
 !cat ~/.claude/active-model                  # check current model
 
-# From terminal
+# ── Switch model (from terminal) ──────────────────────────────────────────
 switch-model list                            # numbered list
 switch-model 5                               # switch by number
 switch-model fzf                             # fzf picker (terminal only)
 switch-model status                          # show current model
 
-# Proxy
-curl http://127.0.0.1:4001/api/providers     # check provider status
-curl http://127.0.0.1:4001/v1/models         # list all models
-cat /tmp/opencode-proxy.log                  # proxy logs
+# ── Providers (inside Claude Code — instant, zero tokens) ────────────────
+!~/bin/connect-provider                      # show all provider status
+!~/bin/connect-provider copilot              # OAuth → GitHub Copilot
+!~/bin/connect-provider groq      YOUR_KEY   # connect Groq
+!~/bin/connect-provider gemini    YOUR_KEY   # connect Gemini
+!~/bin/connect-provider openai    YOUR_KEY   # connect OpenAI
+!~/bin/connect-provider nvidia    YOUR_KEY   # connect Nvidia NIM
+!~/bin/connect-provider openrouter YOUR_KEY  # connect OpenRouter
+!~/bin/connect-provider disconnect groq      # disconnect a provider
+
+# ── Slash commands (go through AI — slower) ───────────────────────────────
+/switch-model                                # show model list
+/switch-model 5                              # switch to model #5
+/connect-provider                            # show provider status
+/connect-provider groq YOUR_KEY              # connect provider
+/connect-provider disconnect groq            # disconnect provider
+
+# ── Proxy & diagnostics ───────────────────────────────────────────────────
+curl http://127.0.0.1:4001/api/providers     # check provider status (JSON)
+curl http://127.0.0.1:4001/api/stats         # live stats (model, requests, uptime)
+curl http://127.0.0.1:4001/v1/models         # list all available models
+cat /tmp/opencode-proxy.log                  # proxy server logs
+
+# ── Web portal ────────────────────────────────────────────────────────────
+# Open http://127.0.0.1:4001 in browser — Dashboard, Providers, Settings
 ```
 
 ---
