@@ -272,6 +272,9 @@ cleanup_gateway() {
     cp "$GATEWAY_ORIGINAL" "$GATEWAY_CACHE" 2>/dev/null || true
   fi
   rm -f "$TEMP_SETTINGS" 2>/dev/null || true
+  # Reset terminal/tmux pane title so stale model name doesn't persist
+  printf '\033]0;shell\007' 2>/dev/null || true
+  printf '\033]2;\007' 2>/dev/null || true
 }
 trap cleanup_gateway EXIT
 
