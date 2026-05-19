@@ -19,6 +19,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { saveOauthState, readOauthState, deleteOauthState, STATE_PATH } = require('./lib/oauth_state');
+const { enqueueProviderRequest, PROVIDER_QUEUES } = require('./lib/provider_queue');
 
 const PORT = 4001;
 const OPENCODE_HOST = 'opencode.ai';
@@ -47,7 +48,6 @@ const COPILOT_HOST           = 'api.githubcopilot.com';
 const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
 const COPILOT_INTEGRATION_ID = 'vscode-chat';
 const COPILOT_MODELS = [
-  'copilot/claude-opus-4.7',
   'copilot/claude-opus-4.6-1m',
   'copilot/claude-sonnet-4.6',
   'copilot/claude-sonnet-4.5',
@@ -66,7 +66,6 @@ const COPILOT_RATE_MULTIPLIERS = {
   'copilot/claude-sonnet-4.6':  1,
   'copilot/claude-sonnet-4.5':  1,
   'copilot/claude-haiku-4.5':   0.33,
-  'copilot/claude-opus-4.7':    15,
   'copilot/claude-opus-4.6-1m': 15,
   'copilot/grok-code-fast-1':   1,
 };
@@ -2265,14 +2264,26 @@ const server = http.createServer((req, res) => {
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
-        forwardPromise = forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
+        const pid = providerInfo.name === 'GitHub Copilot'   ? 'github-copilot'
+                  : providerInfo.name === 'Google Gemini'    ? 'gemini'
+                  : providerInfo.name === 'OpenAI'           ? 'openai'
+                  : providerInfo.name === 'Groq'             ? 'groq'
+                  : providerInfo.name === 'Nvidia NIM'       ? 'nvidia'
+                  : providerInfo.name === 'OpenRouter'       ? 'openrouter'
+                  : providerInfo.name === 'Ollama'           ? 'ollama'
+                  : providerInfo.name === 'Anthropic Direct' ? 'anthropic'
+                  : 'opencode';
+        const limits = getProviderLimits(pid);
+        forwardPromise = enqueueProviderRequest(pid, () => forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
           providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
-          providerInfo.extraHeaders || {}, providerInfo.name);
+          providerInfo.extraHeaders || {}, providerInfo.name), limits);
       } else {
         const { base: endpointBase, apiKey: routedKey } = getEndpoint(model);
         const fwdHeaders = { authorization: `Bearer ${routedKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${endpointBase.includes('/go/') ? 'Go plan' : 'Free Zen'}`);
-        forwardPromise = forwardToZen('/chat/completions', 'POST', fwdHeaders, bodyStr, endpointBase);
+        const pid = endpointBase.includes('/go/') ? 'opencode-go' : 'opencode-free';
+        const limits = getProviderLimits(pid);
+        forwardPromise = enqueueProviderRequest(pid, () => forwardToZen('/chat/completions', 'POST', fwdHeaders, bodyStr, endpointBase), limits);
       }
 
       forwardPromise.then(upstream => {
