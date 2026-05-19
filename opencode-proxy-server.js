@@ -267,87 +267,6 @@ const REQUEST_COUNTS = {
   opencode: 0,
   anthropic: 0,
 };
-
-
-// ─── Provider queues + exponential backoff (to mitigate upstream 429) ───────
-const PROVIDER_QUEUES = {};
-const DEFAULT_PROVIDER_LIMITS = {
-  opencode: { concurrency: 2, maxRetries: 3, baseBackoffMs: 500 },
-  'github-copilot': { concurrency: 1, maxRetries: 2, baseBackoffMs: 500 },
-  gemini: { concurrency: 2, maxRetries: 3, baseBackoffMs: 500 },
-  openai: { concurrency: 2, maxRetries: 3, baseBackoffMs: 500 },
-  default: { concurrency: 2, maxRetries: 3, baseBackoffMs: 500 },
-};
-
-function getProviderLimits(pid) {
-  try {
-    if (CFG && CFG.providerLimits && CFG.providerLimits[pid]) {
-      const cfg = CFG.providerLimits[pid];
-      return { ...DEFAULT_PROVIDER_LIMITS.default, ...(DEFAULT_PROVIDER_LIMITS[pid]||{}), ...cfg };
-    }
-  } catch (e) {}
-  return DEFAULT_PROVIDER_LIMITS[pid] || DEFAULT_PROVIDER_LIMITS.default;
-}
-
-function enqueueProviderRequest(pid, sendFn) {
-  if (!PROVIDER_QUEUES[pid]) PROVIDER_QUEUES[pid] = { inFlight: 0, queue: [] };
-  const q = PROVIDER_QUEUES[pid];
-  return new Promise((resolve, reject) => {
-    q.queue.push({ sendFn, resolve, reject });
-    processProviderQueue(pid);
-  });
-}
-
-function processProviderQueue(pid) {
-  const q = PROVIDER_QUEUES[pid];
-  if (!q) return;
-  const limits = getProviderLimits(pid);
-  while (q.inFlight < limits.concurrency && q.queue.length > 0) {
-    const task = q.queue.shift();
-    q.inFlight++;
-    runProviderTask(pid, task, limits).finally(() => {
-      q.inFlight--;
-      processProviderQueue(pid);
-    });
-  }
-}
-
-async function runProviderTask(pid, task, limits) {
-  const attemptRun = async (attempt) => {
-    try {
-      const upstream = await task.sendFn();
-      const status = upstream && upstream.statusCode ? upstream.statusCode : 200;
-      if (status === 429) {
-        const ra = parseInt((upstream.headers && (upstream.headers['retry-after']||upstream.headers['Retry-After'])) || '0', 10) || 0;
-        if (attempt < limits.maxRetries) {
-          const backoff = Math.min(limits.baseBackoffMs * Math.pow(2, attempt), 60000);
-          const delay = ra > 0 ? ra * 1000 : backoff;
-          console.log(`[BACKOFF] ${pid} upstream 429 → retry in ${delay}ms (attempt ${attempt+1}/${limits.maxRetries})`);
-          await new Promise(r => setTimeout(r, delay));
-          return attemptRun(attempt+1);
-        } else {
-          return upstream;
-        }
-      }
-      return upstream;
-    } catch (err) {
-      if (attempt < limits.maxRetries) {
-        const backoff = Math.min(limits.baseBackoffMs * Math.pow(2, attempt), 60000);
-        console.log(`[BACKOFF] ${pid} send error: ${err.message} → retry in ${backoff}ms (attempt ${attempt+1}/${limits.maxRetries})`);
-        await new Promise(r => setTimeout(r, backoff));
-        return attemptRun(attempt+1);
-      }
-      throw err;
-    }
-  };
-
-  try {
-    const res = await attemptRun(0);
-    task.resolve(res);
-  } catch (err) {
-    task.reject(err);
-  }
-}
 const PROXY_START_TIME = Date.now(); // used by /api/stats uptime calculation
 let _oauthState = ''; // CSRF state for GitHub OAuth flow
 
@@ -2277,22 +2196,20 @@ const server = http.createServer((req, res) => {
 
       // Route to correct provider (before body serialization so we can fix model name)
       const providerInfo = getProviderForModel(model);
-      // Increment request counter for this provider and decide providerKey for queueing
-let providerKey = 'opencode';
-if (providerInfo) {
-  providerKey = providerInfo.name === 'GitHub Copilot'   ? 'github-copilot'
-              : providerInfo.name === 'Google Gemini'    ? 'gemini'
-              : providerInfo.name === 'OpenAI'           ? 'openai'
-              : providerInfo.name === 'Groq'             ? 'groq'
-              : providerInfo.name === 'Nvidia NIM'       ? 'nvidia'
-              : providerInfo.name === 'OpenRouter'       ? 'openrouter'
-              : providerInfo.name === 'Ollama'           ? 'ollama'
-              : providerInfo.name === 'Anthropic Direct' ? 'anthropic'
-              : 'opencode';
-  REQUEST_COUNTS[providerKey] = (REQUEST_COUNTS[providerKey] || 0) + 1;
-} else {
-  REQUEST_COUNTS.opencode = (REQUEST_COUNTS.opencode || 0) + 1;
-}
+      // Increment request counter for this provider
+      if (providerInfo) {
+        const pid = providerInfo.name === 'GitHub Copilot'   ? 'github-copilot'
+                  : providerInfo.name === 'Google Gemini'    ? 'gemini'
+                  : providerInfo.name === 'OpenAI'           ? 'openai'
+                  : providerInfo.name === 'Groq'             ? 'groq'
+                  : providerInfo.name === 'Nvidia NIM'       ? 'nvidia'
+                  : providerInfo.name === 'OpenRouter'       ? 'openrouter'
+                  : providerInfo.name === 'Ollama'           ? 'ollama'
+                  : providerInfo.name === 'Anthropic Direct' ? 'anthropic'
+                  : 'opencode';
+        REQUEST_COUNTS[pid] = (REQUEST_COUNTS[pid] || 0) + 1;
+      } else {
+        REQUEST_COUNTS.opencode = (REQUEST_COUNTS.opencode || 0) + 1;
       }
 
       // ── Anthropic Direct passthrough (no OpenAI conversion needed) ───────────
@@ -2348,15 +2265,9 @@ if (providerInfo) {
         }
         const fwdHeaders = { authorization: `Bearer ${providerInfo.apiKey}` };
         console.log(`[${new Date().toISOString()}] ${model} → ${providerInfo.name}`);
-        const sendFn = () => forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
+        forwardPromise = forwardToProvider('/chat/completions', 'POST', fwdHeaders, bodyStr,
           providerInfo.host, providerInfo.port, providerInfo.base, providerInfo.ssl,
           providerInfo.extraHeaders || {}, providerInfo.name);
-        forwardPromise = enqueueProviderRequest(providerKey, sendFn);
-      } else {
-        const { base: endpointBase, apiKey: routedKey } = getEndpoint(model);
-        const fwdHeaders = { authorization: `Bearer ${routedKey}` };
-        console.log(`[${new Date().toISOString()}] ${model} → ${endpointBase.includes('/go/') ? 'Go plan' : 'Free Zen'}`);
-        forwardPromise = enqueueProviderRequest('opencode', () => forwardToZen('/chat/completions', 'POST', fwdHeaders, bodyStr, endpointBase));
       } else {
         const { base: endpointBase, apiKey: routedKey } = getEndpoint(model);
         const fwdHeaders = { authorization: `Bearer ${routedKey}` };
