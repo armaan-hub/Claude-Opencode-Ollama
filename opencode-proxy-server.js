@@ -45,7 +45,6 @@ const COPILOT_HOST           = 'api.githubcopilot.com';
 const COPILOT_EDITOR_VERSION = 'vscode/1.99.0';
 const COPILOT_INTEGRATION_ID = 'vscode-chat';
 const COPILOT_MODELS = [
-  'copilot/claude-opus-4.7',
   'copilot/claude-opus-4.6-1m',
   'copilot/claude-sonnet-4.6',
   'copilot/claude-sonnet-4.5',
@@ -1006,7 +1005,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="panel-body">
           <div style="font-size:12px;color:#8b949e;line-height:2.2">
           <!-- NOTE: keep in sync with COPILOT_MODELS array in constants section above -->
-            <code style="color:#58a6ff">copilot/claude-opus-4.7</code> · <code style="color:#58a6ff">copilot/claude-opus-4.6-1m</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.6</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.5</code><br>
+            <code style="color:#58a6ff">copilot/claude-opus-4.6-1m</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.6</code> · <code style="color:#3fb950">copilot/claude-sonnet-4.5</code><br>
             <code style="color:#3fb950">copilot/claude-haiku-4.5</code> · <code style="color:#58a6ff">copilot/gpt-5.4</code> · <code style="color:#3fb950">copilot/gpt-5.2</code> · <code style="color:#3fb950">copilot/gpt-5-mini</code><br>
             <code style="color:#3fb950">copilot/gpt-4.1</code> · <code style="color:#d29922">copilot/grok-code-fast-1</code> · <code style="color:#58a6ff">copilot/claude-opus-4.5</code>
           </div>
